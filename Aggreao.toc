@@ -1,0 +1,21 @@
+## Interface: 120100, 20506, 11509, 16001
+## Interface-TBC: 20506
+## Interface-Classic: 11509
+## Title: Aggreao!!
+## Notes: Work in progress.
+## Notes-esES: En desarrollo.
+## Notes-esMX: En desarrollo.
+## Category: Combat
+## Category-esES: Combate
+## Category-esMX: Combate
+## Author: LechuckThePirate
+## Version: 0.1.0-alpha
+## X-License: GPL-3.0
+## IconTexture: Interface\AddOns\Aggreao\Icons\Aggreao.png
+## SavedVariables: AggreaoDB
+## SavedVariablesPerCharacter: AggreaoCharDB
+# X-Curse-Project-ID: fill in once the CurseForge project exists (packager reads "## X-Curse-Project-ID: <id>")
+
+Localization\Locale.lua
+Modules\Settings\Settings.lua
+Aggreao.lua

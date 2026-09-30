@@ -1,0 +1,12 @@
+package-as: Aggreao
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
+ignore:
+  - images
+  - tools
+  - CURSEFORGE_DESCRIPTION.md
+  - test
+  - setupTests.lua
+  - "*.test.lua"
+  - .luacheckrc
