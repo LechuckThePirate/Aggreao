@@ -4,7 +4,7 @@
 -- is_truthy / is_falsy / has_error / has_no.errors / matches / near. CI uses the real busted.
 --
 -- Usage, from the repo root:  lua test/busted.lua [file.test.lua ...]
--- With no arguments it finds every *.test.lua (except under tools/ and .git/).
+-- With no arguments it finds every *.test.lua (except under tools/, .git/ and .claude/ -- other worktrees).
 
 local function listTests()
     local files = {}
@@ -14,7 +14,7 @@ local function listTests()
     local cwd = (io.popen(isWindows and "cd" or "pwd"):read("*l") or ""):gsub("[\\/]$", "")
     for line in pipe:lines() do
         local rel = line:gsub("^" .. cwd:gsub("%p", "%%%0"), ""):gsub("^[\\/]", ""):gsub("\\", "/"):gsub("^%./", "")
-        if not rel:match("^tools/") and not rel:match("^%.git/") then files[#files + 1] = rel end
+        if not rel:match("^tools/") and not rel:match("^%.git/") and not rel:match("^%.claude/") then files[#files + 1] = rel end
     end
     pipe:close()
     table.sort(files)
