@@ -1,3 +1,4 @@
+# Syncs the screenshots of the CurseForge description to the media host.
 name: Sync CurseForge description images
 
 on:

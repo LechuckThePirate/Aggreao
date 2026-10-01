@@ -1,3 +1,4 @@
+# Run by hand from the Actions tab (workflow_dispatch).
 name: Release to CurseForge
 
 on:
