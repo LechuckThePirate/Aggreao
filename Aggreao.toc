@@ -14,7 +14,7 @@
 ## IconTexture: Interface\AddOns\Aggreao\Icons\Aggreao.png
 ## SavedVariables: AggreaoDB
 ## SavedVariablesPerCharacter: AggreaoCharDB
-# X-Curse-Project-ID: fill in once the CurseForge project exists (packager reads "## X-Curse-Project-ID: <id>")
+## X-Curse-Project-ID: 1720655
 
 Localization\Locale.lua
 Modules\Settings\Settings.lua
