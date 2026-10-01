@@ -14,6 +14,7 @@ local ISSUES_URL = "https://github.com/LechuckThePirate/Aggreao/issues"
 local LATEST_CHANGELOG_TEXT = table.concat({
     "- New: aggro window for your target: who has the aggro and how close the others are, in order, with",
     "  class colors and role icons (tank, healer, dps).",
+    "- New: pets get a paw-print icon in the list.",
     "- New: title bar with a padlock and a close button; the window is click-through in combat.",
     "- New: \"Hide when not in combat\" preference; out of combat the window says so.",
     "- New: sound alert when you are close to taking the aggro (Preferences).",

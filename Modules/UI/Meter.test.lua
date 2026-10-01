@@ -230,6 +230,29 @@ describe("Meter", function()
         assert.is_false(icon(rows[1]):IsShown())
     end)
 
+    it("a pet gets a paw print instead of a role icon, and a player's row keeps its role icon", function()
+        WowMock.AddUnit("player", "Me", "HUNTER", "DAMAGER")
+        WowMock.AddUnit("pet", "Porky", "HUNTER", "NONE")
+        StartAddon(ns, nil, { locked = true })
+        frame = _G.AggreaoMeterFrame
+        WowMock.AddUnit("target", "Boss", "WARRIOR", nil, { hostile = true })
+        WowMock.threat.pet = { true, 3, 100, 100, 6000 }
+        WowMock.threat.player = { false, 1, 70, 60, 3000 }
+        FireEvent("PLAYER_TARGET_CHANGED")
+        local rows = visibleRows()
+        local function icon(row)
+            return WowMock.Find(function(f) return f._parent == row and f._kind == "Texture" and f._set.SetTexCoord end)
+        end
+        assert.are.same({ "Porky" }, { rowTexts(rows[1])[2] })
+        assert.is_true(icon(rows[1]):IsShown())
+        assert.matches("Icons\\Pet%.png$", icon(rows[1])._set.SetTexture[1])
+        assert.are.same({ 0, 1, 0, 1 }, icon(rows[1])._set.SetTexCoord)
+        assert.matches("PORTRAITROLES$", icon(rows[2])._set.SetTexture[1])
+        ns.char.showRoles = false -- the paw goes with the role icons
+        ns.Meter_Update()
+        assert.is_false(icon(rows[1]):IsShown())
+    end)
+
     it("shows only as many rows as asked, keeping the player's own", function()
         start()
         target()

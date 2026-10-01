@@ -1,4 +1,4 @@
-local _, ns = ...
+local ADDON, ns = ...
 local L = ns.L
 
 -- The aggro window: small, movable, lists who has the aggro of your target and how close the others are,
@@ -14,7 +14,8 @@ local ROLE_COORDS = { -- left, right, top, bottom
     HEALER = { 20 / 64, 39 / 64, 1 / 64, 20 / 64 },
     DAMAGER = { 20 / 64, 39 / 64, 22 / 64, 41 / 64 },
 }
-local BAR_TEXTURE = "Interface\\TargetingFrame\\UI-StatusBar"
+local PET_TEXTURE = "Interface\\AddOns\\" .. ADDON .. "\\Icons\\Pet.png" -- a paw print, for pets
+local BAR_TEXTURE ="Interface\\TargetingFrame\\UI-StatusBar"
 local BACKDROP = {
     bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1,
 }
@@ -204,8 +205,15 @@ function ns.Meter_Render(list, title, alert, text)
         row:SetValue(math.min(e.pct, 100))
         row.name:SetText(e.name)
         row.pct:SetText(("%d%%"):format(math.floor(e.pct + 0.5)))
+        -- the icon: a paw for a pet, the role's for a player (the row is reused, so set both every time)
         local coords = e.role and ns.char.showRoles and ROLE_COORDS[e.role]
-        if coords then
+        if e.isPet and ns.char.showRoles then
+            row.icon:SetTexture(PET_TEXTURE)
+            row.icon:SetTexCoord(0, 1, 0, 1)
+            row.icon:Show()
+            row.name:SetPoint("LEFT", row.icon, "RIGHT", 3, 0)
+        elseif coords then
+            row.icon:SetTexture(ROLE_TEXTURE)
             row.icon:SetTexCoord(unpack(coords))
             row.icon:Show()
             row.name:SetPoint("LEFT", row.icon, "RIGHT", 3, 0)
