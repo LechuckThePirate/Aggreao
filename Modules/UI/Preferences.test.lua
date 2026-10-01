@@ -28,9 +28,10 @@ describe("Preferences", function()
     end)
 
     it("the checkboxes reflect and change the settings", function()
-        -- order: per character, show window, lock, role icons, pets, sound, red border, minimap, chat messages
+        -- order: per character, show window, lock, role icons, pets, hide out of combat, sound, red border,
+        -- minimap, chat messages
         local list = checks()
-        assert.are.equal(9, #list)
+        assert.are.equal(10, #list)
         assert.is_true(list[1]:GetChecked())  -- per character
         assert.is_true(list[2]:GetChecked())  -- window shown (default)
         assert.is_true(list[3]:GetChecked())  -- locked (the test login)
@@ -41,13 +42,20 @@ describe("Preferences", function()
         assert.is_false(ns.char.showRoles)
         list[5]:SetChecked(false); list[5]:Click()
         assert.is_false(ns.char.pets)
-        list[6]:SetChecked(false); list[6]:Click()
-        assert.is_false(ns.char.alertSound)
+        assert.is_false(list[6]:GetChecked()) -- hide out of combat: off by default
+        list[6]:SetChecked(true); list[6]:Click()
+        assert.is_true(ns.char.hideOutOfCombat)
+        assert.is_true(_G.AggreaoMeterFrame:IsShown()) -- unlocked (above): it stays, to be placed
+        ns.char.locked = true
+        ns.Meter_Update()
+        assert.is_false(_G.AggreaoMeterFrame:IsShown()) -- locked and out of combat: hidden
         list[7]:SetChecked(false); list[7]:Click()
-        assert.is_false(ns.char.alertFlash)
-        list[9]:SetChecked(false); list[9]:Click()
-        assert.is_true(ns.char.quiet)
+        assert.is_false(ns.char.alertSound)
         list[8]:SetChecked(false); list[8]:Click()
+        assert.is_false(ns.char.alertFlash)
+        list[10]:SetChecked(false); list[10]:Click()
+        assert.is_true(ns.char.quiet)
+        list[9]:SetChecked(false); list[9]:Click()
         assert.is_true(ns.char.minimap.hide)
     end)
 

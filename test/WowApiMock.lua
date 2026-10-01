@@ -26,6 +26,7 @@ local function resetState()
     WowMock.group = nil -- nil = solo, { size = n, raid = bool }
     WowMock.sounds = {}
     WowMock.time = 0
+    WowMock.inCombat = false
 end
 resetState()
 WowMock.Reset = resetState

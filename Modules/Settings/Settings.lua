@@ -8,6 +8,7 @@ local _, ns = ...
 ns.DEFAULTS = {
     enabled = true,        -- show the aggro window
     locked = false,        -- window can't be dragged
+    hideOutOfCombat = false, -- hide the window when you are not in combat
     rows = 5,              -- players listed
     scale = 1,
     opacity = 0.7,         -- window background
@@ -21,7 +22,7 @@ ns.DEFAULTS = {
 
 local SWITCHABLE = {
     quiet = true, minimap = true, window = true,
-    enabled = true, locked = true, rows = true, scale = true, opacity = true, showRoles = true, pets = true,
+    enabled = true, locked = true, hideOutOfCombat = true, rows = true, scale = true, opacity = true, showRoles = true, pets = true,
     alertSound = true, alertFlash = true, alertThreshold = true, alertSoundKey = true,
 }
 

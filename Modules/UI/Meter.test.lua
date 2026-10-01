@@ -17,6 +17,17 @@ describe("Meter", function()
         return texts -- the percentage was created before the name
     end
 
+    -- what the window says in place of the list: the second text of the window itself (after the header)
+    local function messageText()
+        local n = 0
+        for _, f in ipairs(WowMock.frames) do
+            if f._parent == frame and f._kind == "FontString" then
+                n = n + 1
+                if n == 2 then return f._text end
+            end
+        end
+    end
+
     local function setup()
         WowMock.group = { size = 3 }
         WowMock.AddUnit("player", "Me", "MAGE", "DAMAGER")
@@ -42,16 +53,67 @@ describe("Meter", function()
         frame = _G.AggreaoMeterFrame
     end
 
-    it("is created on entering; locked and with nothing targeted it is hidden", function()
+    it("is created on entering; with nothing going on it says so, with no made-up players", function()
         start()
         assert.is_not_nil(frame)
-        assert.is_false(frame:IsShown())
+        assert.is_true(frame:IsShown())
+        assert.are.equal(0, #visibleRows())
+        assert.are.equal("Not in combat", messageText())
     end)
 
-    it("unlocked and with nothing targeted it shows a sample, to be placed", function()
-        start({})
-        assert.is_true(frame:IsShown())
-        assert.are.equal(3, #visibleRows())
+    it("in combat it says what is missing: a target, or aggro data", function()
+        start()
+        WowMock.inCombat = true
+        FireEvent("PLAYER_REGEN_DISABLED")
+        ns.Meter_Update()
+        assert.are.equal("No target", messageText())
+        WowMock.AddUnit("target", "Boss", "WARRIOR", nil, { hostile = true })
+        ns.Meter_Update()
+        assert.are.equal("No aggro data", messageText())
+    end)
+
+    it("the message goes away when there is a list", function()
+        start()
+        target()
+        FireEvent("PLAYER_TARGET_CHANGED")
+        assert.are.equal("", messageText())
+    end)
+
+    describe("hide when not in combat", function()
+        it("off (default): out of combat the window stays, with its message", function()
+            start()
+            assert.is_true(frame:IsShown())
+        end)
+
+        it("on and locked: hidden out of combat, shown in combat", function()
+            start({ locked = true, hideOutOfCombat = true })
+            assert.is_false(frame:IsShown())
+            WowMock.inCombat = true
+            target()
+            FireEvent("PLAYER_TARGET_CHANGED")
+            assert.is_true(frame:IsShown())
+            WowMock.inCombat = false
+            ns.Meter_Update()
+            assert.is_false(frame:IsShown())
+        end)
+
+        it("on but unlocked: it stays out of combat, so it can be placed", function()
+            start({ hideOutOfCombat = true })
+            assert.is_true(frame:IsShown())
+            assert.are.equal("Not in combat", messageText())
+        end)
+
+        it("leaving combat hides it on the next refresh", function()
+            start({ locked = true, hideOutOfCombat = true })
+            WowMock.inCombat = true
+            target()
+            FireEvent("PLAYER_TARGET_CHANGED")
+            WowMock.inCombat = false
+            FireEvent("PLAYER_REGEN_ENABLED")
+            local driver = WowMock.Find(function(f) return f._events and f._events.PLAYER_REGEN_ENABLED end)
+            driver._scripts.OnUpdate(driver, 0.2)
+            assert.is_false(frame:IsShown())
+        end)
     end)
 
     it("targeting a hostile mob lists its threat, the tank first", function()
@@ -109,28 +171,31 @@ describe("Meter", function()
         assert.are.same({ "10%", "Me" }, rowTexts(rows[3]))
     end)
 
-    it("hides when the target is not hostile, dead, or gone", function()
+    it("the list goes away when the target is not hostile, dead, or gone", function()
         start()
+        WowMock.inCombat = true
         target()
         FireEvent("PLAYER_TARGET_CHANGED")
-        assert.is_true(frame:IsShown())
+        assert.are.equal(3, #visibleRows())
         WowMock.units.target.dead = true
         FireEvent("PLAYER_TARGET_CHANGED")
-        assert.is_false(frame:IsShown())
+        assert.are.equal(0, #visibleRows())
+        assert.are.equal("No target", messageText())
         WowMock.units.target.dead = false
         WowMock.units.target.hostile = false
         FireEvent("PLAYER_TARGET_CHANGED")
-        assert.is_false(frame:IsShown())
+        assert.are.equal(0, #visibleRows())
         WowMock.units.target = nil
         FireEvent("PLAYER_TARGET_CHANGED")
-        assert.is_false(frame:IsShown())
+        assert.are.equal(0, #visibleRows())
     end)
 
-    it("hides with a target nobody has threat on (locked)", function()
+    it("a target nobody has threat on has no rows", function()
         start()
         WowMock.AddUnit("target", "Boss", "WARRIOR", nil, { hostile = true })
         FireEvent("PLAYER_TARGET_CHANGED")
-        assert.is_false(frame:IsShown())
+        assert.are.equal(0, #visibleRows())
+        assert.are.equal("Not in combat", messageText())
     end)
 
     it("'Show the aggro window' off hides it for good", function()
@@ -232,10 +297,8 @@ describe("Meter", function()
             assert.is_true(frame:IsShown())
             SlashCmdList.AGGREAO("lock")
             assert.is_true(ns.char.locked)
-            assert.is_false(frame:IsShown()) -- locked, nothing targeted
             SlashCmdList.AGGREAO("unlock")
             assert.is_false(ns.char.locked)
-            assert.is_true(frame:IsShown())
             ns.char.window = { point = "TOP", relPoint = "TOP", x = 1, y = 1 }
             SlashCmdList.AGGREAO("reset")
             assert.is_nil(ns.char.window)

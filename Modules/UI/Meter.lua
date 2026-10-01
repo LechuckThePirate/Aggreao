@@ -21,14 +21,7 @@ local UPDATE_EVENTS = {
     "PLAYER_REGEN_ENABLED", "PLAYER_REGEN_DISABLED", "UNIT_PET", "PLAYER_ROLES_ASSIGNED",
 }
 
--- what the window shows, unlocked and with nothing targeted, so it can be placed
-local SAMPLE = {
-    { name = "Tank", class = "WARRIOR", role = "TANK", tanking = true, pct = 100 },
-    { name = "Healer", class = "PRIEST", role = "HEALER", pct = 62 },
-    { name = "Mage", class = "MAGE", role = "DAMAGER", pct = 38 },
-}
-
-local frame, header
+local frame, header, message
 local rows = {}
 local driver
 
@@ -117,13 +110,22 @@ local function create()
     header:SetPoint("TOPRIGHT", -PAD - 2, -PAD)
     header:SetJustifyH("LEFT")
     header:SetWordWrap(false)
+
+    -- what the window says when there is no list to show (not in combat, no target...)
+    message = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    message:SetPoint("TOPLEFT", PAD + 2, -(HEADER_H + PAD))
+    message:SetPoint("TOPRIGHT", -PAD - 2, -(HEADER_H + PAD))
+    message:SetHeight(ROW_H)
+    message:SetJustifyH("CENTER")
 end
 
--- Draws the list (see ns.Threat_Collect); `alert` turns the border red.
-function ns.Meter_Render(list, title, alert)
+-- Draws the list (see ns.Threat_Collect); `alert` turns the border red. With an empty list, `text` is
+-- shown in its place.
+function ns.Meter_Render(list, title, alert, text)
     if not frame then create() end
     header:SetText(title or "")
     local shown = ns.Threat_Top(list, ns.char.rows)
+    message:SetText(#shown == 0 and text or "")
     for i, e in ipairs(shown) do
         local row = rows[i] or createRow(i)
         rows[i] = row
@@ -144,7 +146,7 @@ function ns.Meter_Render(list, title, alert)
         row:Show()
     end
     for i = #shown + 1, #rows do rows[i]:Hide() end
-    frame:SetHeight(HEADER_H + 2 * PAD + #shown * ROW_H)
+    frame:SetHeight(HEADER_H + 2 * PAD + math.max(#shown, 1) * ROW_H)
     frame:SetBackdropBorderColor(unpack(alert and ns.char.alertFlash and ALERT_BORDER or NORMAL_BORDER))
 end
 
@@ -152,24 +154,27 @@ end
 function ns.Meter_Update()
     if not frame then create() end
     local mob = "target"
-    local list, title, alert = {}, nil, false
-    if UnitExists(mob) and UnitCanAttack("player", mob) and not UnitIsDead(mob) then
+    local validMob = UnitExists(mob) and UnitCanAttack("player", mob) and not UnitIsDead(mob)
+    local inCombat = UnitAffectingCombat("player")
+    local list, alert = {}, false
+    if validMob then
         list = ns.Threat_Collect(mob, ns.char.pets)
-        title = UnitName(mob)
         alert = ns.Alert_Check(list)
     else
         ns.Alert_Reset()
     end
     if not ns.char.enabled then
         frame:Hide()
+    elseif ns.char.hideOutOfCombat and not inCombat and ns.char.locked then
+        frame:Hide() -- unlocked it stays, to be placed
     elseif #list > 0 then
-        ns.Meter_Render(list, title, alert)
-        frame:Show()
-    elseif not ns.char.locked then
-        ns.Meter_Render(SAMPLE, L["Aggreao!! (unlocked)"], false) -- so it can be placed
+        ns.Meter_Render(list, UnitName(mob), alert)
         frame:Show()
     else
-        frame:Hide()
+        local text = L["Not in combat"]
+        if inCombat then text = validMob and L["No aggro data"] or L["No target"] end
+        ns.Meter_Render({}, "Aggreao!!", false, text)
+        frame:Show()
     end
 end
 
