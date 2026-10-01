@@ -18,8 +18,12 @@ globals = {
 
 -- the game's API and frames it uses
 read_globals = {
-    "C_AddOns", "C_Timer", "CreateFrame", "GetAddOnMetadata", "GetLocale", "InCombatLockdown",
-    "UIParent", "UnitName", "hooksecurefunc", "issecretvalue", "strtrim", "tinsert", "wipe",
+    "C_AddOns", "C_Timer", "CLOSE", "CreateFrame", "GameTooltip", "GameTooltip_Hide", "GetAddOnMetadata",
+    "GetCursorPosition", "GetLocale", "GetNumGroupMembers", "GetSpecialization", "GetSpecializationRole", "GetTime",
+    "InCombatLockdown", "IsInGroup", "IsInRaid", "Minimap", "PlaySound", "RAID_CLASS_COLORS",
+    "ScrollFrame_OnScrollRangeChanged", "UIParent", "UISpecialFrames", "UnitCanAttack", "UnitClass",
+    "UnitDetailedThreatSituation", "UnitExists", "UnitGroupRolesAssigned", "UnitIsDead", "UnitIsUnit", "UnitName",
+    "hooksecurefunc", "issecretvalue", "strtrim", "tinsert", "wipe",
 }
 
 -- tests (busted): they define and change the simulated game's globals on purpose

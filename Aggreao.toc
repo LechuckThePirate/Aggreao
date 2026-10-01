@@ -2,9 +2,9 @@
 ## Interface-TBC: 20506
 ## Interface-Classic: 11509
 ## Title: Aggreao!!
-## Notes: Work in progress.
-## Notes-esES: En desarrollo.
-## Notes-esMX: En desarrollo.
+## Notes: Small movable aggro list for your target: who has the aggro, in order, with class colors and roles; sound alert when you are about to pull.
+## Notes-esES: Pequeña lista movible del aggro de tu objetivo: quién lo tiene, en orden, con colores de clase y roles; aviso sonoro cuando estás a punto de robarlo.
+## Notes-esMX: Pequeña lista movible del aggro de tu objetivo: quién lo tiene, en orden, con colores de clase y roles; aviso sonoro cuando estás a punto de robarlo.
 ## Category: Combat
 ## Category-esES: Combate
 ## Category-esMX: Combate
@@ -18,4 +18,12 @@
 
 Localization\Locale.lua
 Modules\Settings\Settings.lua
+Modules\Threat\Threat.lua
+Modules\Alert\Alert.lua
+Modules\UI\Layout.lua
+Modules\UI\Menu.lua
+Modules\UI\Meter.lua
+Modules\UI\MinimapButton.lua
+Modules\UI\Preferences.lua
+Modules\UI\Welcome.lua
 Aggreao.lua

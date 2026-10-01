@@ -18,7 +18,7 @@ local function announce(text)
     print(("|cff33ff99Aggreao!!|r v%s -- %s"):format(ns.Version(), text))
 end
 
-local announcedReady = false
+local announcedReady, shownWelcome = false, false
 local function announceReady()
     if announcedReady then return end
     announcedReady = true
@@ -33,9 +33,16 @@ events:SetScript("OnEvent", function(_, event, arg1)
         if arg1 ~= ADDON then return end
         ns.InitSettings()
         announce(ns.L["initializing..."])
+        ns.Minimap_Init()
+        ns.Meter_Init()
     elseif event == "PLAYER_ENTERING_WORLD" then
-        -- also fires after /reload; announced once per UI load
+        -- also fires after /reload; announced (and the welcome window shown, if new) once per UI load
         C_Timer.After(1, announceReady)
+        ns.Meter_Update()
+        if not shownWelcome then
+            shownWelcome = true
+            ns.Welcome_ShowIfNew()
+        end
     end
 end)
 
@@ -45,7 +52,22 @@ SlashCmdList.AGGREAO = function(msg)
     msg = strtrim((msg or ""):lower())
     if msg == "version" then
         ns.Print("v" .. ns.Version())
+    elseif msg == "" or msg == "prefs" or msg == "options" or msg == "config" then
+        ns.Prefs_Toggle()
+    elseif msg == "toggle" then
+        ns.Meter_Toggle()
+    elseif msg == "lock" or msg == "unlock" then
+        ns.char.locked = (msg == "lock")
+        ns.Meter_Update()
+        ns.Print(ns.char.locked and ns.L["Window locked."] or ns.L["Window unlocked."])
+    elseif msg == "minimap" then
+        ns.Minimap_Toggle()
+    elseif msg == "reset" then
+        ns.Meter_ResetPosition()
+        ns.Print(ns.L["Window position reset."])
+    elseif msg == "changelog" or msg == "whatsnew" then
+        ns.Welcome_Show()
     else
-        ns.Print(ns.L["Usage: /aggreao | version"])
+        ns.Print(ns.L["Usage: /aggreao | prefs | toggle | lock | minimap | reset | changelog | version"])
     end
 end

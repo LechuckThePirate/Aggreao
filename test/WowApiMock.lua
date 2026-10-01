@@ -6,6 +6,7 @@
 
 WowMock = {}
 local unpackArgs = unpack or table.unpack -- luacheck: ignore 143 (Lua 5.1 lacks it; 5.2+ has it)
+unpack = unpackArgs -- the game (Lua 5.1) has the global; newer Lua (local runs) doesn't
 
 local function resetState()
     WowMock.level = 20
@@ -18,6 +19,13 @@ local function resetState()
     WowMock.timers = {}
     WowMock.frames = {}
     WowMock.hooks = {}
+    -- units of the "game": WowMock.units[token] = { name =, class = CLASSFILE, role =, exists =, dead =, hostile = },
+    -- their threat on the mob: WowMock.threat[token] = { isTanking, status, scaledPct, rawPct, threatValue }
+    WowMock.units = {}
+    WowMock.threat = {}
+    WowMock.group = nil -- nil = solo, { size = n, raid = bool }
+    WowMock.sounds = {}
+    WowMock.time = 0
 end
 resetState()
 WowMock.Reset = resetState
@@ -236,8 +244,48 @@ GetLocale = function() return WowMock.locale or "enUS" end
 UnitLevel = function() return WowMock.level end
 UnitFactionGroup = function() return WowMock.faction end
 UnitRace = function() return unpackArgs(WowMock.race) end
-UnitClass = function() return unpackArgs(WowMock.class) end
-UnitName = function() return "Tester" end
+-- WowMock.AddUnit("party1", "Thrall", "SHAMAN", "HEALER"): a unit that exists in the game
+function WowMock.AddUnit(token, name, class, role, extra)
+    local u = { name = name, class = class, role = role or "NONE" }
+    for k, v in pairs(extra or {}) do u[k] = v end
+    WowMock.units[token] = u
+    return u
+end
+local function unitOf(token)
+    if token == nil or token == "player" then
+        return WowMock.units.player or { name = "Tester", class = WowMock.class[2], role = "NONE" }
+    end
+    return WowMock.units[token]
+end
+UnitExists = function(token) return unitOf(token) ~= nil end
+UnitClass = function(token)
+    local u = unitOf(token)
+    if not u then return nil end
+    if (token == nil or token == "player") and not WowMock.units.player then return unpackArgs(WowMock.class) end
+    return u.class, u.class
+end
+UnitName = function(token) local u = unitOf(token); return u and u.name end
+UnitIsUnit = function(a, b)
+    local ua, ub = unitOf(a), unitOf(b)
+    return a == b or (ua ~= nil and ua == ub)
+end
+UnitCanAttack = function(_, token) local u = unitOf(token); return u ~= nil and u.hostile == true end
+UnitIsDead = function(token) local u = unitOf(token); return u ~= nil and u.dead == true end
+UnitGroupRolesAssigned = function(token) local u = unitOf(token); return u and u.role or "NONE" end
+UnitDetailedThreatSituation = function(token)
+    local t = WowMock.threat[token]
+    if t then return unpackArgs(t, 1, 5) end
+end
+IsInRaid = function() return WowMock.group ~= nil and WowMock.group.raid == true end
+IsInGroup = function() return WowMock.group ~= nil end
+GetNumGroupMembers = function() return WowMock.group and WowMock.group.size or 0 end
+PlaySound = function(id, channel) table.insert(WowMock.sounds, { id, channel }) end
+RAID_CLASS_COLORS = {
+    WARRIOR = { r = 0.78, g = 0.61, b = 0.43 }, MAGE = { r = 0.25, g = 0.78, b = 0.92 },
+    PRIEST = { r = 1, g = 1, b = 1 }, SHAMAN = { r = 0, g = 0.44, b = 0.87 },
+    HUNTER = { r = 0.67, g = 0.83, b = 0.45 },
+}
+CLOSE = "Close"
 GetUnitSpeed = function() return WowMock.speed end
 UnitAffectingCombat = function() return WowMock.inCombat or false end
 InCombatLockdown = function() return WowMock.inCombat or false end
