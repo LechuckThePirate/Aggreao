@@ -10,6 +10,8 @@ it warns you with a sound.
 Works on Retail, TBC Anniversary, Classic Era and WoW Forever.
 Currently in **beta**.
 
+![The aggro window: who has the aggro of your target, and how close you are to taking it](https://media.joanvilarino.online/aggreao/images/screencaps/main_window.png)
+
 ---
 
 ## Features
@@ -47,6 +49,13 @@ tank, since you want that aggro.
 ### Preferences
 Open them with the minimap button, a right-click on the window or `/aggreao`.
 Everything can be saved **per character or shared by your whole account**.
+
+![The preferences window](https://media.joanvilarino.online/aggreao/images/screencaps/preferences.png)
+
+The **minimap button** opens the preferences with a click and can be dragged
+around the minimap (or hidden from the preferences).
+
+![The minimap button](https://media.joanvilarino.online/aggreao/images/screencaps/minimap_button.png)
 
 ---
 
