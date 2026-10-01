@@ -17,16 +17,8 @@ describe("Meter", function()
         return texts -- the percentage was created before the name
     end
 
-    -- what the window says in place of the list: the second text of the window itself (after the header)
-    local function messageText()
-        local n = 0
-        for _, f in ipairs(WowMock.frames) do
-            if f._parent == frame and f._kind == "FontString" then
-                n = n + 1
-                if n == 2 then return f._text end
-            end
-        end
-    end
+    -- the line under the title bar: the mob's name, or what is going on when there is no list
+    local function messageText() return frame.header._text end
 
     local function setup()
         WowMock.group = { size = 3 }
@@ -72,11 +64,86 @@ describe("Meter", function()
         assert.are.equal("No aggro data", messageText())
     end)
 
-    it("the message goes away when there is a list", function()
+    it("with a list, that line is the mob's name", function()
         start()
         target()
         FireEvent("PLAYER_TARGET_CHANGED")
-        assert.are.equal("", messageText())
+        assert.are.equal("Boss", messageText())
+    end)
+
+    describe("title bar", function()
+        it("has the addon's name as title, a padlock and a close button", function()
+            start()
+            assert.are.equal("Aggreao!!", frame.barText._text)
+            assert.is_not_nil(frame.lock)
+            assert.is_not_nil(frame.close)
+        end)
+
+        it("the padlock locks and unlocks, changing its picture and the setting", function()
+            start({})
+            assert.are.same({ "Interface\\Buttons\\LockButton-Unlocked-Up" }, frame.lock._set.SetNormalTexture)
+            frame.lock:Click()
+            assert.is_true(ns.char.locked)
+            assert.are.same({ "Interface\\Buttons\\LockButton-Locked-Up" }, frame.lock._set.SetNormalTexture)
+            frame.lock:Click()
+            assert.is_false(ns.char.locked)
+            assert.are.same({ "Interface\\Buttons\\LockButton-Unlocked-Up" }, frame.lock._set.SetNormalTexture)
+        end)
+
+        it("/aggreao lock changes the padlock too", function()
+            start({})
+            SlashCmdList.AGGREAO("lock")
+            assert.are.same({ "Interface\\Buttons\\LockButton-Locked-Up" }, frame.lock._set.SetNormalTexture)
+        end)
+
+        it("the padlock keeps the preferences checkbox in sync", function()
+            start({})
+            ns.Prefs_Toggle()
+            local lockCheck = WowMock.FindAll(function(f) return f._kind == "CheckButton" and f._parent == _G.AggreaoPreferencesFrame end)[3]
+            assert.is_false(lockCheck:GetChecked())
+            frame.lock:Click()
+            assert.is_true(lockCheck:GetChecked())
+        end)
+
+        it("the close button hides the window for good, and says how to bring it back", function()
+            start({})
+            frame.close:Click()
+            assert.is_false(ns.char.enabled)
+            assert.is_false(frame:IsShown())
+            assert.matches("toggle", WowMock.printed[#WowMock.printed])
+            SlashCmdList.AGGREAO("toggle")
+            assert.is_true(frame:IsShown())
+        end)
+    end)
+
+    describe("click-through in combat", function()
+        it("out of combat the window, the padlock and the close button take the mouse", function()
+            start()
+            assert.is_true(frame:IsMouseEnabled())
+            assert.is_true(frame.lock:IsMouseEnabled())
+            assert.is_true(frame.close:IsMouseEnabled())
+        end)
+
+        it("in combat none of them does, so clicks go through to the game", function()
+            start()
+            WowMock.inCombat = true
+            FireEvent("PLAYER_REGEN_DISABLED")
+            ns.Meter_Update()
+            assert.is_false(frame:IsMouseEnabled())
+            assert.is_false(frame.lock:IsMouseEnabled())
+            assert.is_false(frame.close:IsMouseEnabled())
+        end)
+
+        it("leaving combat gives the mouse back", function()
+            start()
+            WowMock.inCombat = true
+            ns.Meter_Update()
+            WowMock.inCombat = false
+            FireEvent("PLAYER_REGEN_ENABLED")
+            ns.Meter_Update()
+            assert.is_true(frame:IsMouseEnabled())
+            assert.is_true(frame.lock:IsMouseEnabled())
+        end)
     end)
 
     describe("hide when not in combat", function()

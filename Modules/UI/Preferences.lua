@@ -5,7 +5,7 @@ local L = ns.L
 -- Settings, in ns.char: per character or shared by the account, depending on the first checkbox.
 local WIDTH, HEIGHT = 340, 692
 local LABEL_W = WIDTH - 48 - 16 -- a checkbox's text: from after the box (x = 48) to the window's right margin
-local prefs
+local prefs, refreshPrefs
 
 local function makeSlider(parent, y, min, max, step, getValue, setValue, labelFor)
     local label = parent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
@@ -107,6 +107,7 @@ local function create()
         note:SetText(ns.IsPerCharacter() and L["Settings are saved for this character only."]
             or L["Settings are shared by all your characters."])
     end
+    refreshPrefs = refreshAll
     -- a setting changed: store it and redraw the window
     local function set(key)
         return function(value)
@@ -187,6 +188,11 @@ local function create()
     end)
     prefs:SetScript("OnHide", ns.Meter_Update)
     prefs:Hide() -- frames are born shown: hidden until the first Prefs_Toggle (which would close it otherwise)
+end
+
+-- Re-reads every setting (the aggro window can change them too: padlock, close button).
+function ns.Prefs_Refresh()
+    if prefs and prefs:IsShown() then refreshPrefs() end
 end
 
 function ns.Prefs_IsShown()

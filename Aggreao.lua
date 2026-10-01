@@ -57,8 +57,7 @@ SlashCmdList.AGGREAO = function(msg)
     elseif msg == "toggle" then
         ns.Meter_Toggle()
     elseif msg == "lock" or msg == "unlock" then
-        ns.char.locked = (msg == "lock")
-        ns.Meter_Update()
+        ns.Meter_SetLocked(msg == "lock")
         ns.Print(ns.char.locked and ns.L["Window locked."] or ns.L["Window unlocked."])
     elseif msg == "minimap" then
         ns.Minimap_Toggle()

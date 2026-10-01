@@ -2,8 +2,12 @@ local _, ns = ...
 local L = ns.L
 
 -- The aggro window: small, movable, lists who has the aggro of your target and how close the others are,
--- in order. Each row: role icon, name, bar in the class color (full = pulls the aggro) and the percentage.
+-- in order. Under the title bar (title, padlock to lock its position, close button) a line with the mob's
+-- name (or what is going on: not in combat...), then each row: role icon, name, bar in the class color (full =
+-- pulls the aggro) and the percentage.
 local WIDTH, ROW_H, HEADER_H, PAD = 190, 16, 14, 4
+local TITLE_H, LOCK_SIZE = 18, 14 -- the title bar and the padlock in it
+local TOP = 3 + TITLE_H + 2 -- where the mob's name line starts
 local ROLE_TEXTURE = "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" -- in every client
 local ROLE_COORDS = { -- left, right, top, bottom
     TANK = { 0, 19 / 64, 22 / 64, 41 / 64 },
@@ -21,7 +25,7 @@ local UPDATE_EVENTS = {
     "PLAYER_REGEN_ENABLED", "PLAYER_REGEN_DISABLED", "UNIT_PET", "PLAYER_ROLES_ASSIGNED",
 }
 
-local frame, header, message
+local frame, header
 local rows = {}
 local driver
 
@@ -34,7 +38,7 @@ end
 local function createRow(i)
     local row = CreateFrame("StatusBar", nil, frame)
     row:SetSize(WIDTH - 2 * PAD, ROW_H - 1)
-    row:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD, -(HEADER_H + PAD + (i - 1) * ROW_H))
+    row:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD, -(TOP + HEADER_H + (i - 1) * ROW_H))
     row:SetStatusBarTexture(BAR_TEXTURE)
     row:SetMinMaxValues(0, 100)
     row.bg = row:CreateTexture(nil, "BACKGROUND")
@@ -55,7 +59,30 @@ local function createRow(i)
     return row
 end
 
--- Position, scale, opacity and mouse behaviour from the settings.
+-- The padlock's picture says whether the window is locked (only touched when that changes).
+local function updateLock()
+    if not (frame and frame.lock) then return end
+    local locked = ns.char.locked and true or false
+    if frame.lockedShown == locked then return end
+    frame.lockedShown = locked
+    local texture = locked and "Interface\\Buttons\\LockButton-Locked-Up"
+        or "Interface\\Buttons\\LockButton-Unlocked-Up"
+    frame.lock:SetNormalTexture(texture)
+    frame.lock:SetPushedTexture(texture)
+end
+
+-- In combat the window is click-through (the mouse goes to the game behind it, so you can't click it by
+-- mistake); out of combat it takes the mouse again (drag, padlock, close button, right-click).
+local function applyMouse(inCombat)
+    local enabled = not inCombat
+    if frame.mouseEnabled == enabled then return end
+    frame.mouseEnabled = enabled
+    frame:EnableMouse(enabled)
+    frame.close:EnableMouse(enabled)
+    frame.lock:EnableMouse(enabled)
+end
+
+-- Position, scale and opacity from the settings.
 function ns.Meter_ApplySettings()
     if not frame then return end
     local w = ns.char.window
@@ -70,6 +97,12 @@ function ns.Meter_ApplySettings()
     ns.Meter_Update()
 end
 
+function ns.Meter_SetLocked(locked)
+    ns.char.locked = locked
+    ns.Meter_Update()
+    if ns.Prefs_Refresh then ns.Prefs_Refresh() end
+end
+
 function ns.Meter_ResetPosition()
     ns.char.window = nil
     ns.Meter_ApplySettings()
@@ -77,7 +110,7 @@ end
 
 local function create()
     frame = CreateFrame("Frame", "AggreaoMeterFrame", UIParent, "BackdropTemplate")
-    frame:SetSize(WIDTH, HEADER_H + 2 * PAD)
+    frame:SetSize(WIDTH, TOP + HEADER_H + PAD)
     frame:SetFrameStrata("MEDIUM")
     frame:SetClampedToScreen(true)
     frame:SetBackdrop(BACKDROP)
@@ -105,27 +138,64 @@ local function create()
     end)
     frame:SetScript("OnLeave", GameTooltip_Hide)
 
+    -- title bar: what the window is, the padlock and the close button
+    frame.bar = frame:CreateTexture(nil, "BACKGROUND")
+    frame.bar:SetPoint("TOPLEFT", 1, -1)
+    frame.bar:SetPoint("TOPRIGHT", -1, -1)
+    frame.bar:SetHeight(TITLE_H)
+    frame.bar:SetColorTexture(0.2, 0.2, 0.25, 0.9)
+    frame.barText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    frame.barText:SetPoint("CENTER", frame.bar, "CENTER", 0, 0)
+    frame.barText:SetText("Aggreao!!")
+
+    local okClose, close = pcall(CreateFrame, "Button", nil, frame, "UIPanelCloseButton")
+    if not okClose or not close then close = CreateFrame("Button", nil, frame) end
+    close:SetSize(TITLE_H + 6, TITLE_H + 6)
+    close:SetPoint("TOPRIGHT", 3, 3)
+    close:SetScript("OnClick", function() -- closes the window for good (Preferences or /aggreao toggle bring it back)
+        ns.char.enabled = false
+        ns.Meter_Update()
+        if ns.Prefs_Refresh then ns.Prefs_Refresh() end
+        ns.Print(L["Window closed. Show it again with /aggreao toggle or in the preferences."])
+    end)
+    frame.close = close
+
+    -- padlock at the top left: locked, the window can't be moved
+    local lock = CreateFrame("Button", nil, frame)
+    lock:SetSize(LOCK_SIZE, LOCK_SIZE)
+    lock:SetPoint("TOPLEFT", 5, -3)
+    lock:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+    lock:SetScript("OnClick", function() ns.Meter_SetLocked(not ns.char.locked) end)
+    lock:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(ns.char.locked and L["Unlock position"] or L["Lock position"], 1, 1, 1)
+        GameTooltip:Show()
+    end)
+    lock:SetScript("OnLeave", GameTooltip_Hide)
+    frame.lock = lock
+
+    -- the mob's name, or what is going on when there is no list to show (not in combat, no target...)
     header = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    header:SetPoint("TOPLEFT", PAD + 2, -PAD)
-    header:SetPoint("TOPRIGHT", -PAD - 2, -PAD)
+    header:SetPoint("TOPLEFT", PAD + 2, -TOP)
+    header:SetPoint("TOPRIGHT", -PAD - 2, -TOP)
+    header:SetHeight(HEADER_H)
     header:SetJustifyH("LEFT")
     header:SetWordWrap(false)
-
-    -- what the window says when there is no list to show (not in combat, no target...)
-    message = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    message:SetPoint("TOPLEFT", PAD + 2, -(HEADER_H + PAD))
-    message:SetPoint("TOPRIGHT", -PAD - 2, -(HEADER_H + PAD))
-    message:SetHeight(ROW_H)
-    message:SetJustifyH("CENTER")
+    frame.header = header
 end
 
 -- Draws the list (see ns.Threat_Collect); `alert` turns the border red. With an empty list, `text` is
--- shown in its place.
+-- shown in the mob's name line (in grey), in place of the name.
 function ns.Meter_Render(list, title, alert, text)
     if not frame then create() end
-    header:SetText(title or "")
     local shown = ns.Threat_Top(list, ns.char.rows)
-    message:SetText(#shown == 0 and text or "")
+    if #shown == 0 then
+        header:SetText(text or "")
+        header:SetTextColor(0.5, 0.5, 0.5)
+    else
+        header:SetText(title or "")
+        header:SetTextColor(1, 0.82, 0)
+    end
     for i, e in ipairs(shown) do
         local row = rows[i] or createRow(i)
         rows[i] = row
@@ -146,7 +216,7 @@ function ns.Meter_Render(list, title, alert, text)
         row:Show()
     end
     for i = #shown + 1, #rows do rows[i]:Hide() end
-    frame:SetHeight(HEADER_H + 2 * PAD + math.max(#shown, 1) * ROW_H)
+    frame:SetHeight(TOP + HEADER_H + #shown * ROW_H + PAD)
     frame:SetBackdropBorderColor(unpack(alert and ns.char.alertFlash and ALERT_BORDER or NORMAL_BORDER))
 end
 
@@ -156,6 +226,8 @@ function ns.Meter_Update()
     local mob = "target"
     local validMob = UnitExists(mob) and UnitCanAttack("player", mob) and not UnitIsDead(mob)
     local inCombat = UnitAffectingCombat("player")
+    updateLock()
+    applyMouse(inCombat)
     local list, alert = {}, false
     if validMob then
         list = ns.Threat_Collect(mob, ns.char.pets)
@@ -173,7 +245,7 @@ function ns.Meter_Update()
     else
         local text = L["Not in combat"]
         if inCombat then text = validMob and L["No aggro data"] or L["No target"] end
-        ns.Meter_Render({}, "Aggreao!!", false, text)
+        ns.Meter_Render({}, nil, false, text)
         frame:Show()
     end
 end

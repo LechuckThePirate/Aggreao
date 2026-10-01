@@ -13,6 +13,10 @@ local es = {
     ["Not in combat"] = "Fuera de combate",
     ["No target"] = "Sin objetivo",
     ["No aggro data"] = "Sin datos de aggro",
+    ["Lock position"] = "Bloquear posición",
+    ["Unlock position"] = "Desbloquear posición",
+    ["Window closed. Show it again with /aggreao toggle or in the preferences."] =
+        "Ventana cerrada. Vuelve a mostrarla con /aggreao toggle o en las preferencias.",
     ["Window shown."] = "Ventana mostrada.",
     ["Window hidden."] = "Ventana oculta.",
     ["Window locked."] = "Ventana bloqueada.",
