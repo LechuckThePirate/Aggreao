@@ -45,10 +45,9 @@ describe("Preferences", function()
         assert.is_false(list[6]:GetChecked()) -- hide out of combat: off by default
         list[6]:SetChecked(true); list[6]:Click()
         assert.is_true(ns.char.hideOutOfCombat)
-        assert.is_true(_G.AggreaoMeterFrame:IsShown()) -- unlocked (above): it stays, to be placed
-        ns.char.locked = true
-        ns.Meter_Update()
-        assert.is_false(_G.AggreaoMeterFrame:IsShown()) -- locked and out of combat: hidden
+        assert.is_true(_G.AggreaoMeterFrame:IsShown()) -- the preferences are open: it stays, to be placed
+        prefs:Hide()
+        assert.is_false(_G.AggreaoMeterFrame:IsShown()) -- closed, out of combat: hidden
         list[7]:SetChecked(false); list[7]:Click()
         assert.is_false(ns.char.alertSound)
         list[8]:SetChecked(false); list[8]:Click()

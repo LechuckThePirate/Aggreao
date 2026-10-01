@@ -180,8 +180,17 @@ local function create()
     newButton:SetWidth(142)
     newButton:SetPoint("TOPLEFT", 174, -634)
 
-    prefs:SetScript("OnShow", refreshAll)
+    -- the aggro window stays visible while this one is open, even when it hides out of combat
+    prefs:SetScript("OnShow", function()
+        refreshAll()
+        ns.Meter_Update()
+    end)
+    prefs:SetScript("OnHide", ns.Meter_Update)
     prefs:Hide() -- frames are born shown: hidden until the first Prefs_Toggle (which would close it otherwise)
+end
+
+function ns.Prefs_IsShown()
+    return prefs ~= nil and prefs:IsShown()
 end
 
 function ns.Prefs_Toggle()

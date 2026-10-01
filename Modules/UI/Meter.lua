@@ -165,8 +165,8 @@ function ns.Meter_Update()
     end
     if not ns.char.enabled then
         frame:Hide()
-    elseif ns.char.hideOutOfCombat and not inCombat and ns.char.locked then
-        frame:Hide() -- unlocked it stays, to be placed
+    elseif ns.char.hideOutOfCombat and not inCombat and not ns.Prefs_IsShown() then
+        frame:Hide() -- while the preferences are open it stays, to be placed
     elseif #list > 0 then
         ns.Meter_Render(list, UnitName(mob), alert)
         frame:Show()
