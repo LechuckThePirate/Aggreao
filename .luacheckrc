@@ -18,9 +18,9 @@ globals = {
 
 -- the game's API and frames it uses
 read_globals = {
-    "C_AddOns", "C_Timer", "CLOSE", "CreateFrame", "GameTooltip", "GameTooltip_Hide", "GetAddOnMetadata",
+    "C_AddOns", "C_Timer", "CLOSE", "CreateFrame", "GameFontHighlightSmall", "GameTooltip", "GameTooltip_Hide", "GetAddOnMetadata",
     "GetCursorPosition", "GetLocale", "GetNumGroupMembers", "GetSpecialization", "GetSpecializationRole", "GetTime",
-    "InCombatLockdown", "IsInGroup", "IsInRaid", "Minimap", "PlaySound", "RAID_CLASS_COLORS",
+    "InCombatLockdown", "IsInGroup", "IsInRaid", "IsMouseButtonDown", "Minimap", "PlaySound", "RAID_CLASS_COLORS",
     "ScrollFrame_OnScrollRangeChanged", "UIParent", "UISpecialFrames", "UnitCanAttack", "UnitClass",
     "UnitDetailedThreatSituation", "UnitExists", "UnitGroupRolesAssigned", "UnitIsDead", "UnitIsUnit", "UnitName",
     "hooksecurefunc", "issecretvalue", "strtrim", "tinsert", "wipe",
