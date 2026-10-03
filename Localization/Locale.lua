@@ -59,8 +59,8 @@ local es = {
 
     -- welcome window
     ["Welcome to Aggreao!!"] = "Bienvenido a Aggreao!!",
-    ["This is a beta version: you may run into bugs. Please report them on GitHub (click to select, then Ctrl+C):"] =
-        "Esta es una versión beta: puedes encontrar errores. Por favor, repórtalos en GitHub (clic para seleccionar y luego Ctrl+C):",
+    ["Found a bug or have an idea? Please report it on GitHub (click to select, then Ctrl+C):"] =
+        "¿Has encontrado un error o tienes una idea? Cuéntalo en GitHub (clic para seleccionar y luego Ctrl+C):",
     ["Don't show this message again"] = "No volver a mostrar este mensaje",
     ["What's new in v%s:"] = "Novedades de la v%s:",
 }

@@ -9,7 +9,7 @@
 ## Category-esES: Combate
 ## Category-esMX: Combate
 ## Author: LechuckThePirate
-## Version: 0.1.0-alpha
+## Version: 1.0.0
 ## X-License: GPL-3.0
 ## IconTexture: Interface\AddOns\Aggreao\Icons\Aggreao.png
 ## SavedVariables: AggreaoDB

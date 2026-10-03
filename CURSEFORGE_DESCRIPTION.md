@@ -8,7 +8,6 @@ game knows it, a tank, healer or damage icon. And if *you* are about to pull,
 it warns you with a sound.
 
 Works on Retail, TBC Anniversary, Classic Era and WoW Forever.
-Currently in **beta**.
 
 ![The aggro window: who has the aggro of your target, and how close you are to taking it](https://media.joanvilarino.online/aggreao/images/screencaps/main_window.png)
 
@@ -87,7 +86,7 @@ English and Spanish (esES / esMX).
 
 ## Feedback
 
-This is a beta: you may run into bugs. Please report them (and ideas!) on
+Found a bug or have an idea? Please report it on
 [GitHub](https://github.com/LechuckThePirate/Aggreao/issues).
 
 <!-- Screenshots go in images/screencaps/ and are referenced with

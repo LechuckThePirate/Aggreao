@@ -1,6 +1,8 @@
 # Changelog
 
-## 0.1.0-alpha
+## 1.0.0
+
+First public release.
 
 - Aggro window for the target: who has the aggro and how close the others are, in order, with class
   colors and role icons (tank, healer, dps). Movable, lockable, scale and opacity.
