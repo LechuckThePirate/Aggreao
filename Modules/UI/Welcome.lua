@@ -12,12 +12,12 @@ local ISSUES_URL = "https://github.com/LechuckThePirate/Aggreao/issues"
 -- Mirrors the latest entry in CHANGELOG.md -- update this alongside it (and the version bump) on every
 -- release; shown as-is, scrollable, in the window below.
 local LATEST_CHANGELOG_TEXT = table.concat({
-    "- New: aggro window for your target: who has the aggro and how close the others are, in order, with",
-    "  class colors and role icons (tank, healer, dps).",
+    "- New: \"Show other mobs in combat\" (Preferences): under your target's list, one line per other mob you",
+    "  are fighting -- whom it is attacking, with a shield for the tank and a paw for pets; YOU in red when",
+    "  it is attacking you. Needs the enemy nameplates on (V).",
     "- New: pets get a paw-print icon in the list.",
-    "- New: title bar with a padlock and a close button; the window is click-through in combat.",
-    "- New: \"Hide when not in combat\" preference; out of combat the window says so.",
-    "- New: sound alert when you are close to taking the aggro (Preferences).",
+    "- Faster \"about to pull\" alert, and it now also sounds when you take the aggro from your pet in one",
+    "  jump. It no longer sounds when the pet takes the aggro back.",
 }, "\n")
 
 local welcomeFrame

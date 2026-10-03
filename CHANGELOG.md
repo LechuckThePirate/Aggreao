@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.0
 
 - Fix: the alert sounds when you take the aggro from someone else (your pet, say) even if your threat
   jumped over the warning zone between two updates of the game; and it no longer sounds when the pet
