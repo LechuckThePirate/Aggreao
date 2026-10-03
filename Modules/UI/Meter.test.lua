@@ -240,6 +240,9 @@ describe("Meter", function()
             table.sort(list, function(a, b) return a.mob._text < b.mob._text end)
             assert.is_false(list[1].bg:IsShown()) -- Boar
             assert.is_true(list[2].bg:IsShown()) -- Wolf, attacking me
+            assert.matches("|cffff2626YOU|r$", list[2].who._text) -- YOU in red, not my name
+            assert.is_nil(list[2].who._text:find("Me", 1, true))
+            assert.matches("Tank", list[1].who._text) -- the others by name
         end)
 
         it("also shows with no target, and makes the window taller", function()

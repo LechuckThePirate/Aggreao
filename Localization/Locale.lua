@@ -45,6 +45,7 @@ local es = {
     ["Include pets"] = "Incluir mascotas",
     ["Show other mobs in combat"] = "Mostrar otros mobs en combate",
     ["Other mobs"] = "Otros mobs",
+    ["YOU"] = "TÚ",
     ["Needs the enemy nameplates on (V key)."] = "Necesita las placas de enemigos activadas (tecla V).",
     ["Needs the enemy nameplates on (V key). They are off now."] =
         "Necesita las placas de enemigos activadas (tecla V). Ahora están desactivadas.",

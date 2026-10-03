@@ -274,7 +274,7 @@ function ns.Meter_Render(list, title, alert, text, others)
             line:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD, -(firstY + (i - 1) * LINE_H))
             line.bg:SetShown(o.isMe)
             line.mob:SetText(o.mob)
-            local who = o.who or "-"
+            local who = o.isMe and L["YOU"] or o.who or "-" -- a mob attacking you says YOU, not your name
             -- who holds the mob: a shield if it is a tank, a paw if it is a pet (alone, your pet is your tank)
             if ns.char.showRoles then
                 if o.isPet then
@@ -284,7 +284,7 @@ function ns.Meter_Render(list, title, alert, text, others)
                 end
             end
             if o.isMe then
-                who = colorCode(1, 0.3, 0.3) .. who .. "|r"
+                who = colorCode(1, 0.15, 0.15) .. who .. "|r"
             elseif o.class then
                 who = colorCode(classColor(o.class)) .. who .. "|r"
             end
