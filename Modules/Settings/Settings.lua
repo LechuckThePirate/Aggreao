@@ -14,6 +14,7 @@ ns.DEFAULTS = {
     opacity = 0.7,         -- window background
     showRoles = true,      -- tank / healer / dps icon
     pets = true,           -- list pets too (they can hold aggro)
+    otherMobs = false,     -- under the list, one line per other mob in combat: who has its aggro
     alertSound = true,     -- sound when you are close to taking the aggro
     alertFlash = true,     -- red window border when you are close to taking the aggro
     alertThreshold = 80,   -- % of the tank's threat from which "close" starts
@@ -23,6 +24,7 @@ ns.DEFAULTS = {
 local SWITCHABLE = {
     quiet = true, minimap = true, window = true,
     enabled = true, locked = true, hideOutOfCombat = true, rows = true, scale = true, opacity = true, showRoles = true, pets = true,
+    otherMobs = true,
     alertSound = true, alertFlash = true, alertThreshold = true, alertSoundKey = true,
 }
 

@@ -146,6 +146,105 @@ describe("Meter", function()
         end)
     end)
 
+    describe("other mobs in combat", function()
+        local function lines()
+            return WowMock.FindAll(function(f) return f._parent == frame and f.mob ~= nil and f._shown end)
+        end
+
+        local function otherMob(token, name, guid, attackedBy)
+            WowMock.AddUnit(token, name, "WARRIOR", nil, { hostile = true, npc = true, inCombat = true, guid = guid })
+            WowMock.units[token .. "target"] = attackedBy
+        end
+
+        it("off by default: no section even in combat", function()
+            start()
+            WowMock.inCombat = true
+            target()
+            otherMob("nameplate1", "Wolf", "G1", WowMock.units.party1)
+            FireEvent("PLAYER_TARGET_CHANGED")
+            assert.are.equal(0, #lines())
+        end)
+
+        it("on: one line per other mob under the list, with its name and whom it attacks", function()
+            start({ locked = true, otherMobs = true })
+            WowMock.inCombat = true
+            target()
+            otherMob("nameplate1", "Wolf", "G1", WowMock.units.party1)
+            otherMob("nameplate2", "Boar", "G2", WowMock.units.party2)
+            FireEvent("PLAYER_TARGET_CHANGED")
+            local list = lines()
+            assert.are.equal(2, #list)
+            local mobs = { list[1].mob._text, list[2].mob._text }
+            table.sort(mobs)
+            assert.are.same({ "Boar", "Wolf" }, mobs)
+            assert.matches("Tank", list[1].who._text .. list[2].who._text)
+            assert.is_true(frame.othersHeader:IsShown())
+        end)
+
+        it("your target is not repeated in the section", function()
+            start({ locked = true, otherMobs = true })
+            WowMock.inCombat = true
+            target() -- WowMock.units.target, guid "target"
+            WowMock.units.nameplate1 = WowMock.units.target -- the same mob, as a nameplate
+            otherMob("nameplate2", "Boar", "G2", WowMock.units.party2)
+            FireEvent("PLAYER_TARGET_CHANGED")
+            assert.are.equal(1, #lines())
+        end)
+
+        it("a mob attacking you is highlighted and its attacker is you", function()
+            start({ locked = true, otherMobs = true })
+            WowMock.inCombat = true
+            target()
+            otherMob("nameplate1", "Wolf", "G1", WowMock.units.player)
+            otherMob("nameplate2", "Boar", "G2", WowMock.units.party1)
+            FireEvent("PLAYER_TARGET_CHANGED")
+            local list = lines()
+            table.sort(list, function(a, b) return a.mob._text < b.mob._text end)
+            assert.is_false(list[1].bg:IsShown()) -- Boar
+            assert.is_true(list[2].bg:IsShown()) -- Wolf, attacking me
+        end)
+
+        it("also shows with no target, and makes the window taller", function()
+            start({ locked = true, otherMobs = true })
+            WowMock.inCombat = true
+            ns.Meter_Update()
+            local before = frame:GetHeight()
+            otherMob("nameplate1", "Wolf", "G1", WowMock.units.party1)
+            ns.Meter_Update()
+            assert.are.equal(1, #lines())
+            assert.is_true(frame:GetHeight() > before)
+            assert.are.equal("No target", messageText())
+        end)
+
+        it("out of combat the section is empty", function()
+            start({ locked = true, otherMobs = true })
+            otherMob("nameplate1", "Wolf", "G1", WowMock.units.party1)
+            ns.Meter_Update()
+            assert.are.equal(0, #lines())
+            assert.is_false(frame.othersHeader:IsShown())
+        end)
+
+        it("when the mobs go away the lines and the label go away", function()
+            start({ locked = true, otherMobs = true })
+            WowMock.inCombat = true
+            otherMob("nameplate1", "Wolf", "G1", WowMock.units.party1)
+            ns.Meter_Update()
+            assert.are.equal(1, #lines())
+            WowMock.units.nameplate1.inCombat = false
+            ns.Meter_Update()
+            assert.are.equal(0, #lines())
+            assert.is_false(frame.othersHeader:IsShown())
+        end)
+
+        it("at most 4 lines", function()
+            start({ locked = true, otherMobs = true })
+            WowMock.inCombat = true
+            for i = 1, 7 do otherMob("nameplate" .. i, "M" .. i, "G" .. i, WowMock.units.party1) end
+            ns.Meter_Update()
+            assert.are.equal(4, #lines())
+        end)
+    end)
+
     describe("hide when not in combat", function()
         it("off (default): out of combat the window stays, with its message", function()
             start()

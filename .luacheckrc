@@ -22,7 +22,8 @@ read_globals = {
     "GetCursorPosition", "GetLocale", "GetNumGroupMembers", "GetSpecialization", "GetSpecializationRole", "GetTime",
     "InCombatLockdown", "IsInGroup", "IsInRaid", "IsMouseButtonDown", "Minimap", "PlaySound", "RAID_CLASS_COLORS",
     "ScrollFrame_OnScrollRangeChanged", "UIParent", "UISpecialFrames", "UnitCanAttack", "UnitClass",
-    "UnitDetailedThreatSituation", "UnitExists", "UnitGroupRolesAssigned", "UnitIsDead", "UnitIsUnit", "UnitName",
+    "UnitAffectingCombat", "UnitDetailedThreatSituation", "UnitExists", "UnitGUID", "UnitGroupRolesAssigned", "UnitIsDead",
+    "UnitIsPlayer", "UnitIsUnit", "UnitName", "UnitPlayerControlled",
     "hooksecurefunc", "issecretvalue", "strtrim", "tinsert", "wipe",
 }
 

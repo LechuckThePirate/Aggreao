@@ -24,6 +24,14 @@ shown, your own row replaces the last one, so you always see where you stand.
 Under the title bar, the mob's name; out of combat, the window says so instead
 of showing made-up numbers.
 
+### The other mobs you are fighting
+Turn on **Show other mobs in combat** and, under your target's list, you get one
+line for each other mob in the fight: its name and **whom it is attacking** (in
+their class color, with a paw for pets), plus your own threat on it where the game
+provides it. The mobs that are attacking *you* are marked in red, first in the
+list. It needs the enemy nameplates on (the `V` key) and shows the mobs that are
+in range.
+
 ### Roles at a glance
 A **tank**, **healer** or **damage** icon next to each name, taken from the
 roles assigned in your group or from your own specialization. Where the game

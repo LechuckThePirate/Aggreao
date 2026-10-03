@@ -273,8 +273,8 @@ end
 UnitCanAttack = function(_, token) local u = unitOf(token); return u ~= nil and u.hostile == true end
 UnitIsDead = function(token) local u = unitOf(token); return u ~= nil and u.dead == true end
 UnitGroupRolesAssigned = function(token) local u = unitOf(token); return u and u.role or "NONE" end
-UnitDetailedThreatSituation = function(token)
-    local t = WowMock.threat[token]
+UnitDetailedThreatSituation = function(token, mob)
+    local t = WowMock.threat[token .. "@" .. tostring(mob)] or WowMock.threat[token] -- "player@nameplate1" = on that mob
     if t then return unpackArgs(t, 1, 5) end
 end
 IsInRaid = function() return WowMock.group ~= nil and WowMock.group.raid == true end
@@ -288,7 +288,14 @@ RAID_CLASS_COLORS = {
 }
 CLOSE = "Close"
 GetUnitSpeed = function() return WowMock.speed end
-UnitAffectingCombat = function() return WowMock.inCombat or false end
+UnitAffectingCombat = function(token)
+    if token == nil or token == "player" then return WowMock.inCombat or false end
+    local u = unitOf(token)
+    return u ~= nil and u.inCombat == true
+end
+UnitGUID = function(token) local u = unitOf(token); return u and (u.guid or token) end
+UnitIsPlayer = function(token) local u = unitOf(token); return u ~= nil and u.npc ~= true and u.pet ~= true end
+UnitPlayerControlled = function(token) local u = unitOf(token); return u ~= nil and u.npc ~= true end
 InCombatLockdown = function() return WowMock.inCombat or false end
 GetCursorPosition = function() return WowMock.cursor[1], WowMock.cursor[2] end
 IsShiftKeyDown = function() return WowMock.shift or false end

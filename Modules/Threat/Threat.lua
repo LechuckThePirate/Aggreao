@@ -127,3 +127,47 @@ function ns.Threat_Top(list, max)
     end
     return top
 end
+
+-- The other mobs you are fighting: one entry per hostile unit in combat that the game lets us reach
+-- (enemy nameplates, focus, bosses), without the one in `skipGuid` (your target, already listed in full).
+-- It only asks who each mob is attacking (its target), plus your own threat on it where the client has it, so
+-- it is cheap and works even where the full threat list isn't available.
+-- { { mob = name, who = name of whom it attacks, class = , isPet = , isMe = , pct = your % on it or nil } },
+-- the ones attacking you first, then by your threat; at most `max`.
+local MOB_TOKENS = { "focus", "boss1", "boss2", "boss3", "boss4", "boss5" }
+for i = 1, 40 do MOB_TOKENS[#MOB_TOKENS + 1] = "nameplate" .. i end
+
+function ns.Threat_Mobs(max, skipGuid)
+    local list, seen = {}, {}
+    for _, unit in ipairs(MOB_TOKENS) do
+        if UnitExists(unit) and UnitCanAttack("player", unit) and not UnitIsDead(unit) and UnitAffectingCombat(unit) then
+            local guid = UnitGUID and UnitGUID(unit) or unit
+            if issecretvalue and issecretvalue(guid) then guid = unit end -- can't compare it: counted as another mob
+            if guid ~= skipGuid and not seen[guid] then
+                seen[guid] = true
+                local entry = { mob = UnitName(unit) or "?", isMe = false, isPet = false }
+                local target = unit .. "target"
+                if UnitExists(target) then
+                    entry.who = UnitName(target)
+                    entry.isMe = UnitIsUnit(target, "player") and true or false
+                    entry.isPet = (not UnitIsPlayer(target)) and UnitPlayerControlled(target) and true or false
+                    if UnitIsPlayer(target) then entry.class = select(2, UnitClass(target)) end
+                end
+                if entry.isMe then
+                    entry.pct = 100
+                elseif UnitDetailedThreatSituation then
+                    local _, _, scaled = UnitDetailedThreatSituation("player", unit)
+                    if readable(scaled) then entry.pct = scaled end
+                end
+                list[#list + 1] = entry
+            end
+        end
+    end
+    table.sort(list, function(a, b)
+        if a.isMe ~= b.isMe then return a.isMe end
+        if (a.pct or 0) ~= (b.pct or 0) then return (a.pct or 0) > (b.pct or 0) end
+        return a.mob < b.mob
+    end)
+    while #list > max do list[#list] = nil end
+    return list
+end

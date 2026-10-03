@@ -8,6 +8,8 @@ local L = ns.L
 local WIDTH, ROW_H, HEADER_H, PAD = 190, 16, 14, 4
 local TITLE_H, LOCK_SIZE = 18, 14 -- the title bar and the padlock in it
 local TOP = 3 + TITLE_H + 2 -- where the mob's name line starts
+local SECTION_H, LINE_H = 13, 14 -- the "Other mobs" label, and each line under it
+local OTHER_MOBS_MAX = 4 -- lines in that section
 local ROLE_TEXTURE = "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" -- in every client
 local ROLE_COORDS = { -- left, right, top, bottom
     TANK = { 0, 19 / 64, 22 / 64, 41 / 64 },
@@ -28,12 +30,38 @@ local UPDATE_EVENTS = {
 
 local frame, header
 local rows = {}
+local lines = {} -- one per other mob
 local driver
 
 local function classColor(class)
     local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
     if c then return c.r, c.g, c.b end
     return 0.6, 0.6, 0.6
+end
+
+local function colorCode(r, g, b)
+    return ("|cff%02x%02x%02x"):format(math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
+end
+
+-- A line of the "Other mobs" section: the mob's name, and on the right whom it is attacking (class color,
+-- a paw for a pet) with your own threat on it; red when it is attacking you.
+local function createLine(i, firstY)
+    local line = CreateFrame("Frame", nil, frame)
+    line:SetSize(WIDTH - 2 * PAD, LINE_H)
+    line:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD, -(firstY + (i - 1) * LINE_H))
+    line.bg = line:CreateTexture(nil, "BACKGROUND")
+    line.bg:SetAllPoints()
+    line.bg:SetColorTexture(1, 0.1, 0.1, 0.25)
+    line.who = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    line.who:SetPoint("RIGHT", -2, 0)
+    line.who:SetJustifyH("RIGHT")
+    line.who:SetWordWrap(false)
+    line.mob = line:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    line.mob:SetPoint("LEFT", 2, 0)
+    line.mob:SetPoint("RIGHT", line.who, "LEFT", -4, 0)
+    line.mob:SetJustifyH("LEFT")
+    line.mob:SetWordWrap(false)
+    return line
 end
 
 local function createRow(i)
@@ -183,11 +211,16 @@ local function create()
     header:SetJustifyH("LEFT")
     header:SetWordWrap(false)
     frame.header = header
+
+    frame.othersHeader = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    frame.othersHeader:SetJustifyH("LEFT")
+    frame.othersHeader:SetText(L["Other mobs"])
+    frame.othersHeader:Hide()
 end
 
 -- Draws the list (see ns.Threat_Collect); `alert` turns the border red. With an empty list, `text` is
 -- shown in the mob's name line (in grey), in place of the name.
-function ns.Meter_Render(list, title, alert, text)
+function ns.Meter_Render(list, title, alert, text, others)
     if not frame then create() end
     local shown = ns.Threat_Top(list, ns.char.rows)
     if #shown == 0 then
@@ -224,7 +257,40 @@ function ns.Meter_Render(list, title, alert, text)
         row:Show()
     end
     for i = #shown + 1, #rows do rows[i]:Hide() end
-    frame:SetHeight(TOP + HEADER_H + #shown * ROW_H + PAD)
+    local bottom = TOP + HEADER_H + #shown * ROW_H
+    others = others or {}
+    if #others > 0 then
+        frame.othersHeader:ClearAllPoints()
+        frame.othersHeader:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD + 2, -(bottom + 2))
+        frame.othersHeader:Show()
+        local firstY = bottom + SECTION_H
+        for i, o in ipairs(others) do
+            local line = lines[i] or createLine(i, firstY)
+            lines[i] = line
+            line:ClearAllPoints()
+            line:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD, -(firstY + (i - 1) * LINE_H))
+            line.bg:SetShown(o.isMe)
+            line.mob:SetText(o.mob)
+            local who = o.who or "-"
+            if o.isPet then
+                who = "|T" .. PET_TEXTURE .. ":10|t " .. who
+            end
+            if o.isMe then
+                who = colorCode(1, 0.3, 0.3) .. who .. "|r"
+            elseif o.class then
+                who = colorCode(classColor(o.class)) .. who .. "|r"
+            end
+            if o.pct and not o.isMe then who = who .. (" %d%%"):format(math.floor(o.pct + 0.5)) end
+            line.who:SetText(who)
+            line.who:SetWidth(math.min(110, math.ceil(line.who:GetStringWidth()) + 4))
+            line:Show()
+        end
+        bottom = firstY + #others * LINE_H
+    else
+        frame.othersHeader:Hide()
+    end
+    for i = #others + 1, #lines do lines[i]:Hide() end
+    frame:SetHeight(bottom + PAD)
     frame:SetBackdropBorderColor(unpack(alert and ns.char.alertFlash and ALERT_BORDER or NORMAL_BORDER))
 end
 
@@ -236,24 +302,27 @@ function ns.Meter_Update()
     local inCombat = UnitAffectingCombat("player")
     updateLock()
     applyMouse(inCombat)
-    local list, alert = {}, false
+    local list, alert, others = {}, false, nil
     if validMob then
         list = ns.Threat_Collect(mob, ns.char.pets)
         alert = ns.Alert_Check(list)
     else
         ns.Alert_Reset()
     end
+    if ns.char.otherMobs and inCombat then
+        others = ns.Threat_Mobs(OTHER_MOBS_MAX, validMob and UnitGUID(mob) or nil)
+    end
     if not ns.char.enabled then
         frame:Hide()
     elseif ns.char.hideOutOfCombat and not inCombat and not ns.Prefs_IsShown() then
         frame:Hide() -- while the preferences are open it stays, to be placed
     elseif #list > 0 then
-        ns.Meter_Render(list, UnitName(mob), alert)
+        ns.Meter_Render(list, UnitName(mob), alert, nil, others)
         frame:Show()
     else
         local text = L["Not in combat"]
         if inCombat then text = validMob and L["No aggro data"] or L["No target"] end
-        ns.Meter_Render({}, nil, false, text)
+        ns.Meter_Render({}, nil, false, text, others)
         frame:Show()
     end
 end

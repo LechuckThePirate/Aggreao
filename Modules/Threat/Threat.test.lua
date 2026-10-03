@@ -203,4 +203,114 @@ describe("Threat", function()
             assert.are.equal("P7", top[5].name)
         end)
     end)
+
+    describe("Threat_Mobs", function()
+        local function mob(token, name, guid, extra)
+            local e = { hostile = true, npc = true, inCombat = true, guid = guid }
+            for k, v in pairs(extra or {}) do e[k] = v end
+            return WowMock.AddUnit(token, name, "WARRIOR", nil, e)
+        end
+
+        before_each(function()
+            WowMock.group = { size = 3 }
+            WowMock.AddUnit("player", "Me", "MAGE", "DAMAGER")
+            WowMock.AddUnit("party1", "Tank", "WARRIOR", "TANK")
+        end)
+
+        it("lists the hostile mobs in combat that the game lets us reach", function()
+            mob("nameplate1", "Wolf", "G1")
+            mob("nameplate2", "Boar", "G2")
+            mob("boss1", "King", "G3")
+            local names = {}
+            for _, e in ipairs(ns.Threat_Mobs(10)) do names[#names + 1] = e.mob end
+            table.sort(names)
+            assert.are.same({ "Boar", "King", "Wolf" }, names)
+        end)
+
+        it("leaves out mobs that are not in combat, dead, friendly, or your target", function()
+            mob("nameplate1", "Idle", "G1", { inCombat = false })
+            mob("nameplate2", "Dead", "G2", { dead = true })
+            mob("nameplate3", "Friend", "G3", { hostile = false })
+            mob("nameplate4", "Target", "G4")
+            mob("nameplate5", "Other", "G5")
+            local list = ns.Threat_Mobs(10, "G4")
+            assert.are.equal(1, #list)
+            assert.are.equal("Other", list[1].mob)
+        end)
+
+        it("counts a mob once even if it is a nameplate and also your focus", function()
+            mob("nameplate1", "Wolf", "G1")
+            mob("focus", "Wolf", "G1")
+            assert.are.equal(1, #ns.Threat_Mobs(10))
+        end)
+
+        it("says whom each mob is attacking, with the class for players", function()
+            mob("nameplate1", "Wolf", "G1")
+            WowMock.units.nameplate1target = WowMock.units.party1
+            local e = ns.Threat_Mobs(10)[1]
+            assert.are.equal("Tank", e.who)
+            assert.are.equal("WARRIOR", e.class)
+            assert.is_false(e.isMe)
+            assert.is_false(e.isPet)
+        end)
+
+        it("a mob attacking your pet: the pet, with no class", function()
+            mob("nameplate1", "Wolf", "G1")
+            WowMock.units.nameplate1target = WowMock.AddUnit("pet", "Porky", "HUNTER", "NONE", { pet = true })
+            local e = ns.Threat_Mobs(10)[1]
+            assert.are.equal("Porky", e.who)
+            assert.is_true(e.isPet)
+            assert.is_nil(e.class)
+        end)
+
+        it("a mob with no target has nobody to show", function()
+            mob("nameplate1", "Wolf", "G1")
+            local e = ns.Threat_Mobs(10)[1]
+            assert.is_nil(e.who)
+            assert.is_false(e.isMe)
+        end)
+
+        it("your own threat on each mob, where the client has it; 100 % if it attacks you", function()
+            mob("nameplate1", "Wolf", "G1")
+            mob("nameplate2", "Boar", "G2")
+            WowMock.units.nameplate1target = WowMock.units.party1
+            WowMock.units.nameplate2target = WowMock.units.player
+            WowMock.threat["player@nameplate1"] = { false, 1, 64, 50, 500 }
+            local byName = {}
+            for _, e in ipairs(ns.Threat_Mobs(10)) do byName[e.mob] = e end
+            assert.are.equal(64, byName.Wolf.pct)
+            assert.is_true(byName.Boar.isMe)
+            assert.are.equal(100, byName.Boar.pct)
+        end)
+
+        it("without the threat API it still says whom they attack, with no percentage", function()
+            mob("nameplate1", "Wolf", "G1")
+            WowMock.units.nameplate1target = WowMock.units.party1
+            _G.UnitDetailedThreatSituation = nil
+            local e = ns.Threat_Mobs(10)[1]
+            assert.are.equal("Tank", e.who)
+            assert.is_nil(e.pct)
+        end)
+
+        it("the ones attacking you first, then by your threat, and at most max", function()
+            mob("nameplate1", "A", "G1")
+            mob("nameplate2", "B", "G2")
+            mob("nameplate3", "C", "G3")
+            mob("nameplate4", "D", "G4")
+            WowMock.units.nameplate4target = WowMock.units.player
+            WowMock.threat["player@nameplate1"] = { false, 1, 30, 30, 1 }
+            WowMock.threat["player@nameplate2"] = { false, 1, 90, 90, 1 }
+            local list = ns.Threat_Mobs(3)
+            assert.are.equal(3, #list)
+            assert.are.same({ "D", "B", "A" }, { list[1].mob, list[2].mob, list[3].mob })
+        end)
+
+        it("units whose GUID cannot be read are counted as different mobs, not compared", function()
+            mob("nameplate1", "Wolf", "G1")
+            mob("nameplate2", "Boar", "G2")
+            _G.issecretvalue = function() return true end
+            assert.are.equal(2, #ns.Threat_Mobs(10))
+            _G.issecretvalue = nil
+        end)
+    end)
 end)
