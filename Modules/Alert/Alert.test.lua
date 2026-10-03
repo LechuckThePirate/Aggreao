@@ -95,4 +95,76 @@ describe("Alert", function()
         assert.are.equal("Ready check", ns.Alert_SoundName("ready"))
         assert.are.equal("Raid warning", ns.Alert_SoundName("nonsense"))
     end)
+    describe("taking the aggro from someone else", function()
+        it("sounds when you take it in one jump, without passing through the warning zone", function()
+            ns.Alert_Check(me(40))
+            assert.are.equal(0, #WowMock.sounds)
+            ns.Alert_Check(me(100, { tanking = true }))
+            assert.are.equal(1, #WowMock.sounds)
+        end)
+
+        it("does not sound a second time if it had already warned you in this approach", function()
+            ns.Alert_Check(me(85))
+            assert.are.equal(1, #WowMock.sounds)
+            WowMock.time = 10
+            ns.Alert_Check(me(100, { tanking = true }))
+            assert.are.equal(1, #WowMock.sounds)
+        end)
+
+        it("does not sound when you held the aggro from the start (you pulled it)", function()
+            ns.Alert_Check(me(100, { tanking = true }))
+            assert.are.equal(0, #WowMock.sounds)
+        end)
+
+        it("sounds when your pet holds it and then you do, even if you were not in the list", function()
+            ns.Alert_Check({ { name = "Pet", tanking = true, pct = 100 } }) -- you have no threat yet
+            ns.Alert_Check(me(100, { tanking = true }))
+            assert.are.equal(1, #WowMock.sounds)
+        end)
+
+        it("a tank taking it is not an alert", function()
+            ns.Alert_Check(me(40, { role = "TANK" }))
+            ns.Alert_Check(me(100, { tanking = true, role = "TANK" }))
+            assert.are.equal(0, #WowMock.sounds)
+        end)
+
+        it("with the sound off it does not sound", function()
+            ns.char.alertSound = false
+            ns.Alert_Check(me(40))
+            ns.Alert_Check(me(100, { tanking = true }))
+            assert.are.equal(0, #WowMock.sounds)
+        end)
+
+        it("a new target starts clean", function()
+            ns.Alert_Check(me(100, { tanking = true }))
+            ns.Alert_Reset()
+            ns.Alert_Check(me(40))
+            WowMock.time = 10
+            ns.Alert_Check(me(100, { tanking = true }))
+            assert.are.equal(1, #WowMock.sounds)
+        end)
+    end)
+
+    describe("the pet takes the aggro back", function()
+        it("does not sound while you are still high, as if you were about to pull", function()
+            ns.Alert_Check(me(40))
+            ns.Alert_Check(me(100, { tanking = true })) -- you took it: it sounded
+            assert.are.equal(1, #WowMock.sounds)
+            WowMock.time = 10
+            ns.Alert_Check(me(95)) -- the pet growls: you are at 95 % and no longer hold it
+            ns.Alert_Check(me(92))
+            assert.are.equal(1, #WowMock.sounds)
+        end)
+
+        it("it warns again once your threat has dropped well below the threshold and climbs back", function()
+            ns.Alert_Check(me(40))
+            ns.Alert_Check(me(100, { tanking = true }))
+            WowMock.time = 10
+            ns.Alert_Check(me(95))
+            ns.Alert_Check(me(50)) -- far below: re-armed
+            WowMock.time = 20
+            ns.Alert_Check(me(85))
+            assert.are.equal(2, #WowMock.sounds)
+        end)
+    end)
 end)

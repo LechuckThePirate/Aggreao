@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Fix: the alert sounds when you take the aggro from someone else (your pet, say) even if your threat
+  jumped over the warning zone between two updates of the game; and it no longer sounds when the pet
+  takes the aggro back while your threat is still high. It re-arms only when your threat drops well
+  below the threshold.
 - Faster "about to pull" alert: your own threat is checked every 0.1 s on its own (it used to wait for
   the window to redraw, up to a quarter of a second), and the window redraws 0.05 s after a threat
   event instead of 0.1 s. The game's own threat updates still set the limit.

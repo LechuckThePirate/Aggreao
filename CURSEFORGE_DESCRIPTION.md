@@ -42,9 +42,10 @@ anything else -- mage, rogue, hunter, warlock -- and left empty otherwise.
 Turn on the sound and Aggreao!! plays it once when your threat reaches a
 percentage of what it takes to pull the mob (80 % by default; choose from 50 to
 100 %), and the window border turns red. Pick the sound from a short list and
-try it from the preferences. It sounds once per approach -- it re-arms when you
-drop back, get the aggro or change target -- and it stays quiet if you are a
-tank, since you want that aggro.
+try it from the preferences. It sounds once per approach -- it re-arms when your
+threat drops well below the threshold or you change target. If your threat jumps
+over the warning zone and you take the aggro from someone else (your pet, say), it
+sounds then. It stays quiet if you are a tank, since you want that aggro.
 
 ### A window that stays out of the way
 - **Title bar** with a padlock to lock its position and a button to close it.

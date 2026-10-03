@@ -3,8 +3,12 @@ local L = ns.L
 
 -- "You are about to take the aggro" alert: a sound (and a red window border, see Meter) once your threat
 -- reaches ns.char.alertThreshold % of what it takes to pull the mob (100 % = you pull it). It sounds once
--- per approach: it re-arms when you drop REARM_MARGIN points below the threshold, when you get the aggro or
--- when the target changes, and never twice within MIN_GAP seconds.
+-- per approach, and never twice within MIN_GAP seconds:
+--  * if your threat jumps over the warning zone between two updates of the game and you take the aggro from
+--    someone else (your pet, say), it sounds then -- unless it had already warned you in this approach;
+--  * it re-arms only when your threat drops REARM_MARGIN points below the threshold, or the target changes.
+--    Holding the aggro doesn't re-arm it: when your pet takes it back your threat is still high, and that
+--    must not sound as if you were about to pull.
 local REARM_MARGIN, MIN_GAP = 10, 2
 
 -- SoundKit ids: they exist in every client. `name` is what Preferences lists.
@@ -16,6 +20,7 @@ ns.ALERT_SOUNDS = {
 }
 
 local armed, lastPlayed = true, nil
+local wasTanking -- whether you held the aggro in the last check: nil = unknown, false = someone else did
 
 function ns.Alert_SoundName(key)
     for _, s in ipairs(ns.ALERT_SOUNDS) do
@@ -35,7 +40,15 @@ function ns.Alert_Play(key)
 end
 
 function ns.Alert_Reset()
-    armed = true
+    armed, wasTanking = true, nil
+end
+
+local function sound()
+    local now = GetTime()
+    if ns.char.alertSound and (not lastPlayed or now - lastPlayed >= MIN_GAP) then
+        ns.Alert_Play()
+        lastPlayed = now
+    end
 end
 
 -- Looks at the threat list; returns true while the player is close to taking the aggro.
@@ -46,15 +59,21 @@ function ns.Alert_Check(list)
     end
     local threshold = ns.char.alertThreshold
     -- a tank not holding it is trying to get it: nothing to warn about
-    local near = me ~= nil and not me.tanking and me.role ~= "TANK" and me.pct >= threshold
-    if near then
-        local now = GetTime()
-        if armed and ns.char.alertSound and (not lastPlayed or now - lastPlayed >= MIN_GAP) then
-            ns.Alert_Play()
-            lastPlayed = now
-        end
+    local isTank = me ~= nil and me.role == "TANK"
+    -- you took the aggro from someone else, and nothing warned you on the way: now
+    local pulled = me ~= nil and me.tanking and wasTanking == false and armed and not isTank
+    if me then
+        wasTanking = me.tanking
+    elseif #list > 0 then
+        wasTanking = false -- someone else holds it, and you don't even have threat on it
+    end
+    local near = me ~= nil and not me.tanking and not isTank and me.pct >= threshold
+    if near or pulled then
+        if armed then sound() end
         armed = false
-    elseif me == nil or me.tanking or me.pct < threshold - REARM_MARGIN then
+    elseif me and me.tanking then
+        armed = false -- holding it: no warning when the other one takes it back with you still high
+    elseif me == nil or me.pct < threshold - REARM_MARGIN then
         armed = true
     end
     return near
