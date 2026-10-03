@@ -178,6 +178,37 @@ describe("Threat", function()
         end)
     end)
 
+    describe("Threat_Self", function()
+        it("only the player's entry: percentage, whether tanking, role", function()
+            party()
+            WowMock.threat.player = { false, 1, 85, 70, 5000 }
+            local me = ns.Threat_Self("target")
+            assert.is_true(me.isMe)
+            assert.is_false(me.tanking)
+            assert.are.equal(85, me.pct)
+            assert.are.equal("DAMAGER", me.role)
+        end)
+
+        it("tanking is 100 % even if the client gives no percentage", function()
+            party()
+            WowMock.threat.player = { true, 3, nil, nil, 5000 }
+            local me = ns.Threat_Self("target")
+            assert.is_true(me.tanking)
+            assert.are.equal(100, me.pct)
+        end)
+
+        it("nil with no threat data, with secret values, or without the API", function()
+            party()
+            assert.is_nil(ns.Threat_Self("target"))
+            _G.issecretvalue = function() return true end
+            WowMock.threat.player = { false, 1, 85, 70, 5000 }
+            assert.is_nil(ns.Threat_Self("target"))
+            _G.issecretvalue = nil
+            _G.UnitDetailedThreatSituation = nil
+            assert.is_nil(ns.Threat_Self("target"))
+        end)
+    end)
+
     describe("Threat_Top", function()
         local function entries(n, meAt)
             local list = {}

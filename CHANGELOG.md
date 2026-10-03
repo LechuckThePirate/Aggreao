@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Faster "about to pull" alert: your own threat is checked every 0.1 s on its own (it used to wait for
+  the window to redraw, up to a quarter of a second), and the window redraws 0.05 s after a threat
+  event instead of 0.1 s. The game's own threat updates still set the limit.
 - New: "Show other mobs in combat" (Preferences, off by default): under the list of your target,
   one line per other mob you are fighting -- its name and whom it is attacking, with your own
   threat on it where the client has it; the ones attacking you in red. A shield marks the tank

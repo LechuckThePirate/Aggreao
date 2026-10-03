@@ -25,13 +25,16 @@ local BACKDROP = {
     bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1,
 }
 local NORMAL_BORDER, ALERT_BORDER = { 0.3, 0.3, 0.3, 1 }, { 1, 0.1, 0.1, 1 }
-local UPDATE_EVERY = 0.25
+local UPDATE_EVERY = 0.25 -- the whole window, with no events
+local EVENT_REDRAW = 0.05 -- ... after a threat event (they can come by the dozen, so not on each)
+local ALERT_EVERY = 0.1 -- the "about to pull" check: your own threat only, so it can run often
 local UPDATE_EVENTS = {
     "UNIT_THREAT_LIST_UPDATE", "UNIT_THREAT_SITUATION_UPDATE", "PLAYER_TARGET_CHANGED", "GROUP_ROSTER_UPDATE",
     "PLAYER_REGEN_ENABLED", "PLAYER_REGEN_DISABLED", "UNIT_PET", "PLAYER_ROLES_ASSIGNED",
 }
 
 local frame, header
+local alertShown = false -- whether the last check said you are close to taking the aggro
 local rows = {}
 local lines = {} -- one per other mob
 local driver
@@ -314,8 +317,10 @@ function ns.Meter_Update()
     if validMob then
         list = ns.Threat_Collect(mob, ns.char.pets)
         alert = ns.Alert_Check(list)
+        alertShown = alert
     else
         ns.Alert_Reset()
+        alertShown = false
     end
     if ns.char.otherMobs and inCombat then
         others = ns.Threat_Mobs(OTHER_MOBS_MAX, validMob and UnitGUID(mob) or nil)
@@ -335,6 +340,18 @@ function ns.Meter_Update()
     end
 end
 
+-- The alert can't wait for the next redraw: your own threat on the target, every ALERT_EVERY seconds. The
+-- sound plays here; if the "close" state changes, the window is redrawn (red border) right away.
+function ns.Meter_FastAlert()
+    if not (ns.char.alertSound or ns.char.alertFlash) then return end
+    if not (UnitAffectingCombat("player") and UnitExists("target") and UnitCanAttack("player", "target")
+        and not UnitIsDead("target")) then return end
+    local me = ns.Threat_Self("target")
+    if not me then return end
+    local near = ns.Alert_Check({ me })
+    if near ~= alertShown then ns.Meter_Update() end
+end
+
 function ns.Meter_Toggle()
     ns.char.enabled = not ns.char.enabled
     ns.Meter_Update()
@@ -350,7 +367,7 @@ function ns.Meter_Init()
     ns.Meter_ApplySettings()
     driver = CreateFrame("Frame")
     for _, event in ipairs(UPDATE_EVENTS) do pcall(driver.RegisterEvent, driver, event) end
-    local elapsed, stale = 0, false
+    local elapsed, stale, sinceAlert = 0, false, 0
     driver:SetScript("OnEvent", function(_, event)
         if event == "PLAYER_TARGET_CHANGED" then
             ns.Alert_Reset()
@@ -360,11 +377,12 @@ function ns.Meter_Init()
         end
     end)
     driver:SetScript("OnUpdate", function(_, dt)
-        elapsed = elapsed + dt
-        if elapsed >= UPDATE_EVERY then
-            elapsed, stale = 0, false
-            ns.Meter_Update()
-        elseif stale and elapsed >= 0.1 then
+        elapsed, sinceAlert = elapsed + dt, sinceAlert + dt
+        if sinceAlert >= ALERT_EVERY then
+            sinceAlert = 0
+            ns.Meter_FastAlert()
+        end
+        if elapsed >= UPDATE_EVERY or (stale and elapsed >= EVENT_REDRAW) then
             elapsed, stale = 0, false
             ns.Meter_Update()
         end

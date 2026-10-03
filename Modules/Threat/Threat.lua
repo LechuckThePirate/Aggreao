@@ -116,6 +116,17 @@ function ns.Threat_Collect(mob, includePets)
     return list
 end
 
+-- Only the player's own entry for the mob (one API call): for the fast check of the "about to pull" alert, which
+-- can't wait for the whole list. nil where the client doesn't give it (or hides it from addons).
+function ns.Threat_Self(mob)
+    if not UnitDetailedThreatSituation then return nil end
+    local isTanking, _, scaled, raw = UnitDetailedThreatSituation("player", mob)
+    local pct = readable(scaled) and scaled or (readable(raw) and raw) or nil
+    if not pct and not isTanking then return nil end
+    local _, classFile = UnitClass("player")
+    return { isMe = true, tanking = isTanking and true or false, pct = pct or 100, role = ns.Threat_Role("player", classFile) }
+end
+
 -- The first `max` entries; if the player is further down, their row replaces the last one so they
 -- always see their own place.
 function ns.Threat_Top(list, max)

@@ -35,6 +35,7 @@ describe("Meter", function()
     end
 
     before_each(function()
+        dofile("test/WowApiMock.lua") -- some tests remove API functions: start from a complete game
         WowMock.Reset()
         ns = LoadAddon()
     end)
@@ -143,6 +144,73 @@ describe("Meter", function()
             ns.Meter_Update()
             assert.is_true(frame:IsMouseEnabled())
             assert.is_true(frame.lock:IsMouseEnabled())
+        end)
+    end)
+
+    describe("fast alert", function()
+        local function driver()
+            return WowMock.Find(function(f) return f._events and f._events.PLAYER_TARGET_CHANGED end)
+        end
+
+        before_each(function()
+            start()
+            WowMock.inCombat = true
+            target()
+            WowMock.threat.player = { false, 1, 50, 40, 3000 }
+            FireEvent("PLAYER_TARGET_CHANGED")
+        end)
+
+        it("sounds within 0.1 s of your threat reaching the threshold, without waiting for the redraw", function()
+            WowMock.threat.player = { false, 1, 90, 80, 5800 }
+            driver()._scripts.OnUpdate(driver(), 0.1)
+            assert.are.equal(1, #WowMock.sounds)
+        end)
+
+        it("does not sound again for the redraw that follows", function()
+            WowMock.threat.player = { false, 1, 90, 80, 5800 }
+            driver()._scripts.OnUpdate(driver(), 0.1)
+            driver()._scripts.OnUpdate(driver(), 0.2)
+            assert.are.equal(1, #WowMock.sounds)
+        end)
+
+        it("turns the border red at once, and back when you drop", function()
+            WowMock.threat.player = { false, 1, 90, 80, 5800 }
+            driver()._scripts.OnUpdate(driver(), 0.1)
+            assert.are.same({ 1, 0.1, 0.1, 1 }, frame._set.SetBackdropBorderColor)
+            WowMock.threat.player = { false, 1, 30, 30, 500 }
+            driver()._scripts.OnUpdate(driver(), 0.1)
+            assert.are.same({ 0.3, 0.3, 0.3, 1 }, frame._set.SetBackdropBorderColor)
+        end)
+
+        it("does nothing out of combat, with no valid target, or with the alerts off", function()
+            WowMock.threat.player = { false, 1, 90, 80, 5800 }
+            WowMock.inCombat = false
+            driver()._scripts.OnUpdate(driver(), 0.1)
+            WowMock.inCombat = true
+            WowMock.units.target.dead = true
+            driver()._scripts.OnUpdate(driver(), 0.1)
+            WowMock.units.target.dead = false
+            ns.char.alertSound, ns.char.alertFlash = false, false
+            driver()._scripts.OnUpdate(driver(), 0.1)
+            assert.are.equal(0, #WowMock.sounds)
+        end)
+
+        it("without the threat API there is nothing to check quickly", function()
+            _G.UnitDetailedThreatSituation = nil
+            driver()._scripts.OnUpdate(driver(), 0.1)
+            assert.are.equal(0, #WowMock.sounds)
+        end)
+
+        it("a threat event redraws after 0.05 s, not 0.25", function()
+            WowMock.threat.player = { false, 1, 60, 50, 4000 }
+            FireEvent("UNIT_THREAT_LIST_UPDATE")
+            driver()._scripts.OnUpdate(driver(), 0.06)
+            local rows = WowMock.FindAll(function(f) return f._parent == frame and f._kind == "StatusBar" and f._shown end)
+            local texts = {}
+            for _, f in ipairs(WowMock.frames) do
+                if f._parent == rows[2] and f._kind == "FontString" then texts[#texts + 1] = f._text end
+            end
+            assert.are.same({ "60%", "Me" }, texts)
         end)
     end)
 
