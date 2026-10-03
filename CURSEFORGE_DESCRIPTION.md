@@ -27,7 +27,7 @@ of showing made-up numbers.
 ### The other mobs you are fighting
 Turn on **Show other mobs in combat** and, under your target's list, you get one
 line for each other mob in the fight: its name and **whom it is attacking** (in
-their class color, with a paw for pets), plus your own threat on it where the game
+their class color, with a shield next to the tank and a paw next to pets), plus your own threat on it where the game
 provides it. The mobs that are attacking *you* are marked in red, first in the
 list. It needs the enemy nameplates on (the `V` key) and shows the mobs that are
 in range.

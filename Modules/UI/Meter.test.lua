@@ -181,6 +181,44 @@ describe("Meter", function()
             assert.is_true(frame.othersHeader:IsShown())
         end)
 
+        it("a tank gets the shield next to the name, a pet the paw, and nobody else an icon", function()
+            start({ locked = true, otherMobs = true })
+            WowMock.inCombat = true
+            WowMock.AddUnit("pet", "Porky", "HUNTER", "NONE", { pet = true })
+            otherMob("nameplate1", "Wolf", "G1", WowMock.units.party1) -- the tank
+            otherMob("nameplate2", "Boar", "G2", WowMock.units.party2) -- the healer
+            otherMob("nameplate3", "Bat", "G3", WowMock.units.pet)
+            ns.Meter_Update()
+            local byMob = {}
+            for _, l in ipairs(lines()) do byMob[l.mob._text] = l.who._text end
+            assert.matches("PORTRAITROLES:12:12:0:0:64:64:0:19:22:41", byMob.Wolf)
+            assert.is_nil(byMob.Boar:find("|T", 1, true))
+            assert.matches("Pet%.png", byMob.Bat)
+            assert.is_nil(byMob.Bat:find("PORTRAITROLES", 1, true))
+        end)
+
+        it("alone, the pet holding the mob has the paw (it is your tank)", function()
+            WowMock.group = nil
+            WowMock.AddUnit("player", "Me", "HUNTER", "NONE")
+            WowMock.AddUnit("pet", "Porky", "HUNTER", "NONE", { pet = true })
+            StartAddon(ns, nil, { locked = true, otherMobs = true })
+            frame = _G.AggreaoMeterFrame
+            WowMock.inCombat = true
+            otherMob("nameplate1", "Wolf", "G1", WowMock.units.pet)
+            ns.Meter_Update()
+            assert.matches("Pet%.png", lines()[1].who._text)
+        end)
+
+        it("with the role icons off, no icons in the section either", function()
+            start({ locked = true, otherMobs = true, showRoles = false })
+            WowMock.inCombat = true
+            WowMock.AddUnit("pet", "Porky", "HUNTER", "NONE", { pet = true })
+            otherMob("nameplate1", "Wolf", "G1", WowMock.units.party1)
+            otherMob("nameplate2", "Bat", "G2", WowMock.units.pet)
+            ns.Meter_Update()
+            for _, l in ipairs(lines()) do assert.is_nil(l.who._text:find("|T", 1, true)) end
+        end)
+
         it("your target is not repeated in the section", function()
             start({ locked = true, otherMobs = true })
             WowMock.inCombat = true

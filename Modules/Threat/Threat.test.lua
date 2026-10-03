@@ -254,6 +254,14 @@ describe("Threat", function()
             assert.is_false(e.isPet)
         end)
 
+        it("tells the role of whom it attacks: a tank is a TANK, a pet has none", function()
+            mob("nameplate1", "Wolf", "G1")
+            WowMock.units.nameplate1target = WowMock.units.party1 -- the group's tank
+            assert.are.equal("TANK", ns.Threat_Mobs(10)[1].role)
+            WowMock.units.nameplate1target = WowMock.AddUnit("pet", "Porky", "HUNTER", "NONE", { pet = true })
+            assert.is_nil(ns.Threat_Mobs(10)[1].role)
+        end)
+
         it("a mob attacking your pet: the pet, with no class", function()
             mob("nameplate1", "Wolf", "G1")
             WowMock.units.nameplate1target = WowMock.AddUnit("pet", "Porky", "HUNTER", "NONE", { pet = true })

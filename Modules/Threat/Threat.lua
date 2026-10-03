@@ -132,7 +132,7 @@ end
 -- (enemy nameplates, focus, bosses), without the one in `skipGuid` (your target, already listed in full).
 -- It only asks who each mob is attacking (its target), plus your own threat on it where the client has it, so
 -- it is cheap and works even where the full threat list isn't available.
--- { { mob = name, who = name of whom it attacks, class = , isPet = , isMe = , pct = your % on it or nil } },
+-- { { mob = name, who = name of whom it attacks, class = , role = , isPet = , isMe = , pct = your % on it or nil } },
 -- the ones attacking you first, then by your threat; at most `max`.
 local MOB_TOKENS = { "focus", "boss1", "boss2", "boss3", "boss4", "boss5" }
 for i = 1, 40 do MOB_TOKENS[#MOB_TOKENS + 1] = "nameplate" .. i end
@@ -151,7 +151,10 @@ function ns.Threat_Mobs(max, skipGuid)
                     entry.who = UnitName(target)
                     entry.isMe = UnitIsUnit(target, "player") and true or false
                     entry.isPet = (not UnitIsPlayer(target)) and UnitPlayerControlled(target) and true or false
-                    if UnitIsPlayer(target) then entry.class = select(2, UnitClass(target)) end
+                    if UnitIsPlayer(target) then
+                        entry.class = select(2, UnitClass(target))
+                        entry.role = ns.Threat_Role(target, entry.class) -- TANK marks the one holding the mob
+                    end
                 end
                 if entry.isMe then
                     entry.pct = 100

@@ -4,7 +4,8 @@
 
 - New: "Show other mobs in combat" (Preferences, off by default): under the list of your target,
   one line per other mob you are fighting -- its name and whom it is attacking, with your own
-  threat on it where the client has it; the ones attacking you in red. Needs enemy nameplates.
+  threat on it where the client has it; the ones attacking you in red. A shield marks the tank
+  holding a mob and a paw a pet (alone, your pet is your tank). Needs enemy nameplates.
 
 ## 1.0.0
 

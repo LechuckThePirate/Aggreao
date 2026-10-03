@@ -17,6 +17,9 @@ local ROLE_COORDS = { -- left, right, top, bottom
     DAMAGER = { 20 / 64, 39 / 64, 22 / 64, 41 / 64 },
 }
 local PET_TEXTURE = "Interface\\AddOns\\" .. ADDON .. "\\Icons\\Pet.png" -- a paw print, for pets
+-- the tank icon of the roles texture, as an inline picture for a line's text (pixels in the 64x64 texture)
+local TANK_INLINE = "|T" .. ROLE_TEXTURE .. ":12:12:0:0:64:64:0:19:22:41|t "
+local PET_INLINE = "|T" .. PET_TEXTURE .. ":10|t "
 local BAR_TEXTURE ="Interface\\TargetingFrame\\UI-StatusBar"
 local BACKDROP = {
     bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1,
@@ -272,8 +275,13 @@ function ns.Meter_Render(list, title, alert, text, others)
             line.bg:SetShown(o.isMe)
             line.mob:SetText(o.mob)
             local who = o.who or "-"
-            if o.isPet then
-                who = "|T" .. PET_TEXTURE .. ":10|t " .. who
+            -- who holds the mob: a shield if it is a tank, a paw if it is a pet (alone, your pet is your tank)
+            if ns.char.showRoles then
+                if o.isPet then
+                    who = PET_INLINE .. who
+                elseif o.role == "TANK" then
+                    who = TANK_INLINE .. who
+                end
             end
             if o.isMe then
                 who = colorCode(1, 0.3, 0.3) .. who .. "|r"
