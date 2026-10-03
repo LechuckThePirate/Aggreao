@@ -61,6 +61,22 @@ describe("Preferences", function()
         assert.is_true(ns.char.minimap.hide)
     end)
 
+    it("says the other mobs need the enemy nameplates, in orange when they are off", function()
+        local function note()
+            return WowMock.Find(function(f) return f._kind == "FontString" and f._parent == prefs and type(f._text) == "string"
+                and f._text:find("nameplates", 1, true) end)
+        end
+        assert.matches("enemy nameplates on %(V key%)%.$", note()._text)
+        assert.are.same({ 0.6, 0.6, 0.6 }, note()._set.SetTextColor)
+        WowMock.cvars.nameplateShowEnemies = "0"
+        prefs:Hide(); prefs:Show()
+        assert.matches("They are off now", note()._text)
+        assert.are.same({ 1, 0.6, 0.2 }, note()._set.SetTextColor)
+        WowMock.cvars.nameplateShowEnemies = "1"
+        prefs:Hide(); prefs:Show()
+        assert.is_nil(note()._text:find("off now", 1, true))
+    end)
+
     it("the sliders show and change rows, scale, opacity and the alert threshold", function()
         local list = sliders()
         assert.are.equal(4, #list)

@@ -27,6 +27,7 @@ local function resetState()
     WowMock.sounds = {}
     WowMock.time = 0
     WowMock.inCombat = false
+    WowMock.cvars = {}
 end
 resetState()
 WowMock.Reset = resetState
@@ -287,6 +288,7 @@ RAID_CLASS_COLORS = {
     HUNTER = { r = 0.67, g = 0.83, b = 0.45 },
 }
 CLOSE = "Close"
+GetCVar = function(name) return WowMock.cvars[name] end
 GetUnitSpeed = function() return WowMock.speed end
 UnitAffectingCombat = function(token)
     if token == nil or token == "player" then return WowMock.inCombat or false end
