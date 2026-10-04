@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1
+
+- Fix: "Show other mobs in combat" raised an error in combat on clients that hide whom a mob is
+  attacking from addons ("attempt to perform boolean test on a secret boolean value"). Those lines
+  now simply don't say whether the mob attacks you, a pet or a player.
+
 ## 1.1.0
 
 - Fix: the alert sounds when you take the aggro from someone else (your pet, say) even if your threat

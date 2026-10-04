@@ -12,6 +12,8 @@ local ISSUES_URL = "https://github.com/LechuckThePirate/Aggreao/issues"
 -- Mirrors the latest entry in CHANGELOG.md -- update this alongside it (and the version bump) on every
 -- release; shown as-is, scrollable, in the window below.
 local LATEST_CHANGELOG_TEXT = table.concat({
+    "- Fix: \"Show other mobs in combat\" no longer raises an error in combat on clients that hide whom a mob",
+    "  is attacking from addons.",
     "- New: \"Show other mobs in combat\" (Preferences): under your target's list, one line per other mob you",
     "  are fighting -- whom it is attacking, with a shield for the tank and a paw for pets; YOU in red when",
     "  it is attacking you. Needs the enemy nameplates on (V).",
