@@ -303,6 +303,21 @@ describe("Meter", function()
             _G.issecretvalue = nil
         end)
 
+        it("a line that showed a hidden name and then a plain one measures its text without error", function()
+            local SECRET = "\0secret"
+            _G.issecretvalue = function(v) return v == SECRET end
+            start({ locked = true, otherMobs = true })
+            WowMock.inCombat = true
+            WowMock.AddUnit("party3", SECRET, SECRET, SECRET)
+            otherMob("nameplate1", "Wolf", "G1", WowMock.units.party3)
+            ns.Meter_Update() -- the line shows the hidden name
+            WowMock.units.nameplate1target = nil -- ... and now the mob has nobody: "-"
+            assert.has_no.errors(function() ns.Meter_Update() end)
+            assert.matches("^%-$", lines()[1].who._text)
+            assert.is_true(lines()[1].who:GetWidth() > 0)
+            _G.issecretvalue = nil
+        end)
+
         it("your target is not repeated in the section", function()
             start({ locked = true, otherMobs = true })
             WowMock.inCombat = true

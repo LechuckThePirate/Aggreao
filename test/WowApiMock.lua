@@ -83,10 +83,16 @@ function frameMethods:IsVisible()
     return true
 end
 function frameMethods:GetParent() return self._parent end
-function frameMethods:SetText(s) self._text = s end
+function frameMethods:SetText(s)
+    self._text = s
+    if issecretvalue and issecretvalue(s) then self._shownSecret = true end -- (the game: its measures become hidden)
+end
 function frameMethods:GetText() return self._text end
 function frameMethods:SetFormattedText(fmt, ...) self._text = fmt:format(...) end
-function frameMethods:GetStringWidth() return #(self._text or "") * 6 end
+function frameMethods:GetStringWidth()
+    if self._shownSecret then error("attempt to perform numeric conversion on a secret number value") end
+    return #(self._text or "") * 6
+end
 function frameMethods:GetStringHeight() return 14 end
 function frameMethods:SetChecked(v) self._checked = v and true or false end
 function frameMethods:GetChecked() return self._checked end

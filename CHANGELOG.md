@@ -6,6 +6,9 @@
   hides the role, class and name of whom an enemy is attacking from addons in combat; they are now
   never compared, joined to text or tested. A hidden name is shown as it is, without color or icon.
   The same care is taken with every other value that comes from a unit.
+- Fix: "attempt to perform numeric conversion on a secret number value" when measuring a line of the "Other
+  mobs" section: a text field that has shown a hidden name answers its size with a hidden number, so the
+  width is now measured on a field of its own that never gets one.
 - Fix: the mob that is your target is told apart from the others by the game (not by its GUID).
 
 ## 1.1.0

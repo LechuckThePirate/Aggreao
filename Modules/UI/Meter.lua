@@ -222,6 +222,11 @@ local function create()
     frame.othersHeader:SetJustifyH("LEFT")
     frame.othersHeader:SetText(L["Other mobs"])
     frame.othersHeader:Hide()
+
+    -- to measure texts (never gets a hidden one, see Meter_Render); invisible
+    frame.measure = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    frame.measure:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+    frame.measure:SetAlpha(0)
 end
 
 -- Draws the list (see ns.Threat_Collect); `alert` turns the border red. With an empty list, `text` is
@@ -310,8 +315,14 @@ function ns.Meter_Render(list, title, alert, text, others)
                 if o.pct and not o.isMe then who = who .. (" %d%%"):format(math.floor(o.pct + 0.5)) end
             end
             line.who:SetText(who)
-            -- (the width of a hidden text is hidden too: a fixed one)
-            line.who:SetWidth(hidden and 90 or math.min(110, math.ceil(line.who:GetStringWidth()) + 4))
+            -- The width of the text: measured on a text field of its own that never gets a hidden text. Asking a field
+            -- that has shown one (even once) gives a hidden number, and that can't be rounded. A hidden name: a fixed one.
+            local width = 90
+            if not hidden then
+                frame.measure:SetText(who)
+                width = math.min(110, math.ceil(frame.measure:GetStringWidth()) + 4)
+            end
+            line.who:SetWidth(width)
             line:Show()
         end
         bottom = firstY + #others * LINE_H
