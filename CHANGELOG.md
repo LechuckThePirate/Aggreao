@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.1
+## 1.1.2
 
 - Fix: Lua errors in the "Other mobs" section ("attempt to compare ... a secret string value"). The game
   hides the role, class and name of whom an enemy is attacking from addons in combat; they are now
@@ -10,6 +10,12 @@
   mobs" section: a text field that has shown a hidden name answers its size with a hidden number, so the
   width is now measured on a field of its own that never gets one.
 - Fix: the mob that is your target is told apart from the others by the game (not by its GUID).
+
+## 1.1.1
+
+- Fix: "Show other mobs in combat" raised an error in combat on clients that hide whom a mob is
+  attacking from addons ("attempt to perform boolean test on a secret boolean value"). Those lines
+  now simply don't say whether the mob attacks you, a pet or a player.
 
 ## 1.1.0
 

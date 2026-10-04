@@ -12,9 +12,10 @@ local ISSUES_URL = "https://github.com/LechuckThePirate/Aggreao/issues"
 -- Mirrors the latest entry in CHANGELOG.md -- update this alongside it (and the version bump) on every
 -- release; shown as-is, scrollable, in the window below.
 local LATEST_CHANGELOG_TEXT = table.concat({
-    "- Fix: Lua errors in the \"Other mobs\" section (\"secret value\"): the game hides the role, class and name",
-    "  of whom an enemy is attacking, and the addon no longer compares, joins or measures them. A hidden",
+    "- Fix: more Lua errors in the \"Other mobs\" section (\"secret value\"): the game hides the role, class and",
+    "  name of whom an enemy is attacking, and the addon no longer compares, joins or measures them. A hidden",
     "  name is shown as it is, without color or icon.",
+    "- 1.1.1: no error in combat when the game hides whom a mob is attacking (\"secret boolean\").",
     "- 1.1.0: \"Show other mobs in combat\" (Preferences), tank shield and pet paw icons, a faster \"about to",
     "  pull\" alert that also sounds when you take the aggro from your pet.",
 }, "\n")
