@@ -233,7 +233,7 @@ function ns.Meter_Render(list, title, alert, text, others)
         header:SetText(text or "")
         header:SetTextColor(0.5, 0.5, 0.5)
     else
-        header:SetText(title or "")
+        if type(title) == "string" then header:SetText(title) else header:SetText("") end -- (may be secret)
         header:SetTextColor(1, 0.82, 0)
     end
     for i, e in ipairs(shown) do
@@ -277,23 +277,41 @@ function ns.Meter_Render(list, title, alert, text, others)
             line:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD, -(firstY + (i - 1) * LINE_H))
             line.bg:SetShown(o.isMe)
             line.mob:SetText(o.mob)
-            local who = o.isMe and L["YOU"] or o.who or "-" -- a mob attacking you says YOU, not your name
+            -- a mob attacking you says YOU, not your name. A name hidden from addons is only passed on as it is
+            -- (testing it, even as a condition, would be an error): no color, no icon, no text added.
+            local who
+            if o.isMe then
+                who = L["YOU"]
+            elseif o.whoSecret then
+                who = o.who
+            elseif o.who then
+                who = o.who
+            else
+                who = "-"
+            end
+            local hidden = o.whoSecret and not o.isMe
             -- who holds the mob: a shield if it is a tank, a paw if it is a pet (alone, your pet is your tank)
-            if ns.char.showRoles then
+            if ns.char.showRoles and not hidden then
                 if o.isPet then
                     who = PET_INLINE .. who
                 elseif o.role == "TANK" then
                     who = TANK_INLINE .. who
                 end
             end
-            if o.isMe then
-                who = colorCode(1, 0.15, 0.15) .. who .. "|r"
-            elseif o.class then
-                who = colorCode(classColor(o.class)) .. who .. "|r"
+            if hidden then
+                line.who:SetTextColor(1, 1, 1) -- no class color (the class is hidden too)
+            else
+                line.who:SetTextColor(1, 0.82, 0)
+                if o.isMe then
+                    who = colorCode(1, 0.15, 0.15) .. who .. "|r"
+                elseif o.class then
+                    who = colorCode(classColor(o.class)) .. who .. "|r"
+                end
+                if o.pct and not o.isMe then who = who .. (" %d%%"):format(math.floor(o.pct + 0.5)) end
             end
-            if o.pct and not o.isMe then who = who .. (" %d%%"):format(math.floor(o.pct + 0.5)) end
             line.who:SetText(who)
-            line.who:SetWidth(math.min(110, math.ceil(line.who:GetStringWidth()) + 4))
+            -- (the width of a hidden text is hidden too: a fixed one)
+            line.who:SetWidth(hidden and 90 or math.min(110, math.ceil(line.who:GetStringWidth()) + 4))
             line:Show()
         end
         bottom = firstY + #others * LINE_H
@@ -309,8 +327,9 @@ end
 function ns.Meter_Update()
     if not frame then create() end
     local mob = "target"
-    local validMob = UnitExists(mob) and UnitCanAttack("player", mob) and not UnitIsDead(mob)
-    local inCombat = UnitAffectingCombat("player")
+    local yes = ns.Yes
+    local validMob = yes(UnitExists(mob)) and yes(UnitCanAttack("player", mob)) and not yes(UnitIsDead(mob))
+    local inCombat = yes(UnitAffectingCombat("player"))
     updateLock()
     applyMouse(inCombat)
     local list, alert, others = {}, false, nil
@@ -323,7 +342,7 @@ function ns.Meter_Update()
         alertShown = false
     end
     if ns.char.otherMobs and inCombat then
-        others = ns.Threat_Mobs(OTHER_MOBS_MAX, validMob and UnitGUID(mob) or nil)
+        others = ns.Threat_Mobs(OTHER_MOBS_MAX, validMob)
     end
     if not ns.char.enabled then
         frame:Hide()
@@ -344,8 +363,9 @@ end
 -- sound plays here; if the "close" state changes, the window is redrawn (red border) right away.
 function ns.Meter_FastAlert()
     if not (ns.char.alertSound or ns.char.alertFlash) then return end
-    if not (UnitAffectingCombat("player") and UnitExists("target") and UnitCanAttack("player", "target")
-        and not UnitIsDead("target")) then return end
+    local yes = ns.Yes
+    if not (yes(UnitAffectingCombat("player")) and yes(UnitExists("target")) and yes(UnitCanAttack("player", "target"))
+        and not yes(UnitIsDead("target"))) then return end
     local me = ns.Threat_Self("target")
     if not me then return end
     local near = ns.Alert_Check({ me })

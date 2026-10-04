@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Fix: Lua errors in the "Other mobs" section ("attempt to compare ... a secret string value"). The game
+  hides the role, class and name of whom an enemy is attacking from addons in combat; they are now
+  never compared, joined to text or tested. A hidden name is shown as it is, without color or icon.
+  The same care is taken with every other value that comes from a unit.
+- Fix: the mob that is your target is told apart from the others by the game (not by its GUID).
+
 ## 1.1.0
 
 - Fix: the alert sounds when you take the aggro from someone else (your pet, say) even if your threat

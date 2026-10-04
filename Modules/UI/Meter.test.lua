@@ -287,6 +287,22 @@ describe("Meter", function()
             for _, l in ipairs(lines()) do assert.is_nil(l.who._text:find("|T", 1, true)) end
         end)
 
+        it("an attacker whose name is hidden (Forever, Retail) is shown as it is: no color, icon or text added", function()
+            local SECRET = "\0secret"
+            _G.issecretvalue = function(v) return v == SECRET end
+            start({ locked = true, otherMobs = true })
+            WowMock.inCombat = true
+            WowMock.AddUnit("party3", SECRET, SECRET, SECRET)
+            WowMock.threat["player@nameplate1"] = { false, 1, 64, 50, 500 }
+            otherMob("nameplate1", "Wolf", "G1", WowMock.units.party3)
+            ns.Meter_Update()
+            local line = lines()[1]
+            assert.are.equal(SECRET, line.who._text)
+            assert.are.same({ 1, 1, 1 }, line.who._set.SetTextColor)
+            assert.are.equal(90, line.who:GetWidth())
+            _G.issecretvalue = nil
+        end)
+
         it("your target is not repeated in the section", function()
             start({ locked = true, otherMobs = true })
             WowMock.inCombat = true

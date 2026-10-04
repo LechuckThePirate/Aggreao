@@ -12,18 +12,36 @@ local function readable(value)
     return type(value) == "number" and not (issecretvalue and issecretvalue(value))
 end
 
+-- The newest clients (Retail 12.x and WoW Forever) hide ("secret") some values the game gives about units in combat -- the role, the class, the name
+-- of an enemy's target... A secret can't be compared, joined to text, used as a table key or tested as a
+-- condition (that is an error), only handed to the interface (SetText...). So everything that comes from a unit
+-- goes through these before the addon does anything else with it:
+--  * plain(v): v, or nil if it is secret;
+--  * yes(v):   a game flag as a plain boolean (a secret one counts as false).
+local function plain(value)
+    if issecretvalue and issecretvalue(value) then return nil end
+    return value
+end
+local function yes(value)
+    if issecretvalue and issecretvalue(value) then return false end
+    return value and true or false
+end
+ns.Plain, ns.Yes = plain, yes
+
 -- Role of a unit: the one assigned in the group (Retail, TBC) or chosen as spec (the player on Retail);
 -- otherwise guessed only for classes that can't do anything else. nil = unknown (no icon).
 function ns.Threat_Role(unit, classFile)
+    classFile = plain(classFile)
     if UnitGroupRolesAssigned then
-        local role = UnitGroupRolesAssigned(unit)
+        local role = plain(UnitGroupRolesAssigned(unit))
         if role == "TANK" or role == "HEALER" or role == "DAMAGER" then return role end
     end
-    if GetSpecialization and GetSpecializationRole and UnitIsUnit(unit, "player") then
+    if GetSpecialization and GetSpecializationRole and yes(UnitIsUnit(unit, "player")) then
         local spec = GetSpecialization()
-        local role = spec and GetSpecializationRole(spec)
+        local role = spec and plain(GetSpecializationRole(spec))
         if role == "TANK" or role == "HEALER" or role == "DAMAGER" then return role end
     end
+    if classFile == nil then return nil end
     return ONE_ROLE[classFile]
 end
 
@@ -52,13 +70,15 @@ end
 
 local function entryFor(unit, owner, isTanking, pct, value)
     local classUnit = owner or unit
-    local _, classFile = UnitClass(classUnit)
+    local classFile = plain(select(2, UnitClass(classUnit)))
+    local name = plain(UnitName(unit))
+    if type(name) ~= "string" then name = "?" end
     return {
         unit = unit,
-        name = UnitName(unit) or "?",
+        name = name,
         class = classFile,
         isPet = owner ~= nil,
-        isMe = (not owner) and UnitIsUnit(unit, "player") or false,
+        isMe = (not owner) and yes(UnitIsUnit(unit, "player")),
         role = (not owner) and ns.Threat_Role(unit, classFile) or nil,
         tanking = isTanking and true or false,
         pct = pct or 0,
@@ -81,10 +101,10 @@ function ns.Threat_Collect(mob, includePets)
     local units = ns.Threat_Units(includePets)
     if UnitDetailedThreatSituation then
         for _, u in ipairs(units) do
-            if UnitExists(u.unit) then
+            if yes(UnitExists(u.unit)) then
                 local isTanking, _, scaled, raw, value = UnitDetailedThreatSituation(u.unit, mob)
                 if readable(scaled) or readable(raw) or readable(value) then
-                    local tanking = isTanking and true or false
+                    local tanking = yes(isTanking)
                     local pct = readable(scaled) and scaled or (readable(raw) and raw) or 0
                     value = readable(value) and value or 0
                     if tanking or value > 0 or pct > 0 then
@@ -98,10 +118,10 @@ function ns.Threat_Collect(mob, includePets)
     if not hasTank then
         -- nobody reported as tanking: the mob's target is, if it is one of ours
         for _, u in ipairs(units) do
-            if UnitExists(u.unit) and UnitIsUnit(mob .. "target", u.unit) then
+            if yes(UnitExists(u.unit)) and yes(UnitIsUnit(mob .. "target", u.unit)) then
                 local found
                 for _, e in ipairs(list) do
-                    if UnitIsUnit(e.unit, u.unit) then found = e break end
+                    if yes(UnitIsUnit(e.unit, u.unit)) then found = e break end
                 end
                 if found then
                     found.tanking, found.pct = true, math.max(found.pct, 100)
@@ -122,9 +142,10 @@ function ns.Threat_Self(mob)
     if not UnitDetailedThreatSituation then return nil end
     local isTanking, _, scaled, raw = UnitDetailedThreatSituation("player", mob)
     local pct = readable(scaled) and scaled or (readable(raw) and raw) or nil
-    if not pct and not isTanking then return nil end
-    local _, classFile = UnitClass("player")
-    return { isMe = true, tanking = isTanking and true or false, pct = pct or 100, role = ns.Threat_Role("player", classFile) }
+    local tanking = yes(isTanking)
+    if not pct and not tanking then return nil end
+    local classFile = plain(select(2, UnitClass("player")))
+    return { isMe = true, tanking = tanking, pct = pct or 100, role = ns.Threat_Role("player", classFile) }
 end
 
 -- The first `max` entries; if the player is further down, their row replaces the last one so they
@@ -140,30 +161,42 @@ function ns.Threat_Top(list, max)
 end
 
 -- The other mobs you are fighting: one entry per hostile unit in combat that the game lets us reach
--- (enemy nameplates, focus, bosses), without the one in `skipGuid` (your target, already listed in full).
+-- (enemy nameplates, focus, bosses), without your target if `skipTarget` (it is already listed in full).
 -- It only asks who each mob is attacking (its target), plus your own threat on it where the client has it, so
 -- it is cheap and works even where the full threat list isn't available.
--- { { mob = name, who = name of whom it attacks, class = , role = , isPet = , isMe = , pct = your % on it or nil } },
--- the ones attacking you first, then by your threat; at most `max`.
+-- { { mob = name, who = name of whom it attacks, whoSecret = true if that name is hidden from addons (it can
+--     only be shown as it is: no color, no icon, no text added), class = , role = , isPet = , isMe = ,
+--     pct = your % on it or nil } }, the ones attacking you first, then by your threat; at most `max`.
 local MOB_TOKENS = { "focus", "boss1", "boss2", "boss3", "boss4", "boss5" }
 for i = 1, 40 do MOB_TOKENS[#MOB_TOKENS + 1] = "nameplate" .. i end
 
-function ns.Threat_Mobs(max, skipGuid)
-    local list, seen = {}, {}
+function ns.Threat_Mobs(max, skipTarget)
+    local list, accepted = {}, {}
     for _, unit in ipairs(MOB_TOKENS) do
-        if UnitExists(unit) and UnitCanAttack("player", unit) and not UnitIsDead(unit) and UnitAffectingCombat(unit) then
-            local guid = UnitGUID and UnitGUID(unit) or unit
-            if issecretvalue and issecretvalue(guid) then guid = unit end -- can't compare it: counted as another mob
-            if guid ~= skipGuid and not seen[guid] then
-                seen[guid] = true
-                local entry = { mob = UnitName(unit) or "?", isMe = false, isPet = false }
+        if yes(UnitExists(unit)) and yes(UnitCanAttack("player", unit)) and not yes(UnitIsDead(unit))
+            and yes(UnitAffectingCombat(unit)) and not (skipTarget and yes(UnitIsUnit(unit, "target"))) then
+            -- the same mob can be a nameplate and also the focus: counted once
+            local duplicate = false
+            for _, other in ipairs(accepted) do
+                if yes(UnitIsUnit(unit, other)) then duplicate = true break end
+            end
+            if not duplicate then
+                accepted[#accepted + 1] = unit
+                local name = UnitName(unit)
+                if type(name) ~= "string" then name = "?" end
+                local entry = { mob = name, sortName = plain(name) or "", isMe = false, isPet = false }
                 local target = unit .. "target"
-                if UnitExists(target) then
-                    entry.who = UnitName(target)
-                    entry.isMe = UnitIsUnit(target, "player") and true or false
-                    entry.isPet = (not UnitIsPlayer(target)) and UnitPlayerControlled(target) and true or false
-                    if UnitIsPlayer(target) then
-                        entry.class = select(2, UnitClass(target))
+                if yes(UnitExists(target)) then
+                    local who = UnitName(target)
+                    if type(who) == "string" then
+                        entry.who = who
+                        entry.whoSecret = (plain(who) == nil)
+                    end
+                    entry.isMe = yes(UnitIsUnit(target, "player"))
+                    local isPlayer = yes(UnitIsPlayer(target))
+                    entry.isPet = (not isPlayer) and yes(UnitPlayerControlled(target))
+                    if isPlayer then
+                        entry.class = plain(select(2, UnitClass(target)))
                         entry.role = ns.Threat_Role(target, entry.class) -- TANK marks the one holding the mob
                     end
                 end
@@ -180,7 +213,7 @@ function ns.Threat_Mobs(max, skipGuid)
     table.sort(list, function(a, b)
         if a.isMe ~= b.isMe then return a.isMe end
         if (a.pct or 0) ~= (b.pct or 0) then return (a.pct or 0) > (b.pct or 0) end
-        return a.mob < b.mob
+        return a.sortName < b.sortName
     end)
     while #list > max do list[#list] = nil end
     return list

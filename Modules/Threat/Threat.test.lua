@@ -262,16 +262,15 @@ describe("Threat", function()
             mob("nameplate1", "Idle", "G1", { inCombat = false })
             mob("nameplate2", "Dead", "G2", { dead = true })
             mob("nameplate3", "Friend", "G3", { hostile = false })
-            mob("nameplate4", "Target", "G4")
+            WowMock.units.target = mob("nameplate4", "Target", "G4") -- your target is also a nameplate
             mob("nameplate5", "Other", "G5")
-            local list = ns.Threat_Mobs(10, "G4")
+            local list = ns.Threat_Mobs(10, true)
             assert.are.equal(1, #list)
             assert.are.equal("Other", list[1].mob)
         end)
 
         it("counts a mob once even if it is a nameplate and also your focus", function()
-            mob("nameplate1", "Wolf", "G1")
-            mob("focus", "Wolf", "G1")
+            WowMock.units.focus = mob("nameplate1", "Wolf", "G1") -- the same unit under two tokens
             assert.are.equal(1, #ns.Threat_Mobs(10))
         end)
 
@@ -344,12 +343,61 @@ describe("Threat", function()
             assert.are.same({ "D", "B", "A" }, { list[1].mob, list[2].mob, list[3].mob })
         end)
 
-        it("units whose GUID cannot be read are counted as different mobs, not compared", function()
-            mob("nameplate1", "Wolf", "G1")
-            mob("nameplate2", "Boar", "G2")
-            _G.issecretvalue = function() return true end
-            assert.are.equal(2, #ns.Threat_Mobs(10))
-            _G.issecretvalue = nil
+        describe("hidden (secret) values of the newest clients (Retail, Forever)", function()
+            local SECRET = "\0secret"
+            before_each(function() _G.issecretvalue = function(v) return v == SECRET end end)
+            after_each(function() _G.issecretvalue = nil end)
+
+            it("a role and a class that are hidden give no role, instead of an error", function()
+                WowMock.AddUnit("party2", SECRET, SECRET, SECRET)
+                assert.is_nil(ns.Threat_Role("party2", SECRET))
+            end)
+
+            it("whom a mob attacks with a hidden name, class and role: the name is kept as it is, with no class or role", function()
+                mob("nameplate1", "Wolf", "G1")
+                WowMock.units.nameplate1target = WowMock.AddUnit("party2", SECRET, SECRET, SECRET)
+                local e = ns.Threat_Mobs(10)[1]
+                assert.are.equal(SECRET, e.who)
+                assert.is_true(e.whoSecret)
+                assert.is_nil(e.class)
+                assert.is_nil(e.role)
+            end)
+
+            it("a hidden name of the mob itself is no problem for the sorting", function()
+                mob("nameplate1", SECRET, "G1")
+                mob("nameplate2", "Boar", "G2")
+                mob("nameplate3", SECRET, "G3")
+                local list = ns.Threat_Mobs(10)
+                assert.are.equal(3, #list)
+                assert.are.equal("Boar", list[3].mob) -- hidden names sort as "" (first); the order is only a tie-breaker
+            end)
+
+            it("a plain name is not marked as hidden", function()
+                mob("nameplate1", "Wolf", "G1")
+                WowMock.units.nameplate1target = WowMock.units.party1
+                assert.is_false(ns.Threat_Mobs(10)[1].whoSecret)
+            end)
+
+            it("a group member with a hidden name and class is still listed, as ?", function()
+                WowMock.units.party2 = nil
+                WowMock.AddUnit("party2", SECRET, SECRET, SECRET)
+                WowMock.group = { size = 3 }
+                WowMock.AddUnit("target", "Boss", "WARRIOR", nil, { hostile = true })
+                WowMock.threat.party2 = { true, 3, 100, 100, 6000 }
+                local list = ns.Threat_Collect("target", false)
+                assert.are.equal(1, #list)
+                assert.are.equal("?", list[1].name)
+                assert.is_nil(list[1].class)
+                assert.is_nil(list[1].role)
+            end)
+
+            it("a hidden flag counts as false instead of breaking the condition", function()
+                assert.is_false(ns.Yes(SECRET))
+                assert.is_true(ns.Yes(true))
+                assert.is_false(ns.Yes(nil))
+                assert.is_nil(ns.Plain(SECRET))
+                assert.are.equal("x", ns.Plain("x"))
+            end)
         end)
     end)
 end)
