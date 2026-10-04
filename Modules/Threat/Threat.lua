@@ -12,6 +12,13 @@ local function readable(value)
     return type(value) == "number" and not (issecretvalue and issecretvalue(value))
 end
 
+-- A yes/no answer from the game as a plain boolean. In combat it can come "secret" (about a nameplate's target,
+-- say), which can't even be tested: that counts as no.
+local function flag(value)
+    if issecretvalue and issecretvalue(value) then return false end
+    return value and true or false
+end
+
 -- Role of a unit: the one assigned in the group (Retail, TBC) or chosen as spec (the player on Retail);
 -- otherwise guessed only for classes that can't do anything else. nil = unknown (no icon).
 function ns.Threat_Role(unit, classFile)
@@ -151,18 +158,19 @@ for i = 1, 40 do MOB_TOKENS[#MOB_TOKENS + 1] = "nameplate" .. i end
 function ns.Threat_Mobs(max, skipGuid)
     local list, seen = {}, {}
     for _, unit in ipairs(MOB_TOKENS) do
-        if UnitExists(unit) and UnitCanAttack("player", unit) and not UnitIsDead(unit) and UnitAffectingCombat(unit) then
+        if flag(UnitExists(unit)) and flag(UnitCanAttack("player", unit)) and not flag(UnitIsDead(unit))
+            and flag(UnitAffectingCombat(unit)) then
             local guid = UnitGUID and UnitGUID(unit) or unit
             if issecretvalue and issecretvalue(guid) then guid = unit end -- can't compare it: counted as another mob
             if guid ~= skipGuid and not seen[guid] then
                 seen[guid] = true
                 local entry = { mob = UnitName(unit) or "?", isMe = false, isPet = false }
                 local target = unit .. "target"
-                if UnitExists(target) then
+                if flag(UnitExists(target)) then
                     entry.who = UnitName(target)
-                    entry.isMe = UnitIsUnit(target, "player") and true or false
-                    entry.isPet = (not UnitIsPlayer(target)) and UnitPlayerControlled(target) and true or false
-                    if UnitIsPlayer(target) then
+                    entry.isMe = flag(UnitIsUnit(target, "player"))
+                    entry.isPet = not flag(UnitIsPlayer(target)) and flag(UnitPlayerControlled(target))
+                    if flag(UnitIsPlayer(target)) then
                         entry.class = select(2, UnitClass(target))
                         entry.role = ns.Threat_Role(target, entry.class) -- TANK marks the one holding the mob
                     end

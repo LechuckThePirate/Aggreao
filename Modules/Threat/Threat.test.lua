@@ -344,10 +344,29 @@ describe("Threat", function()
             assert.are.same({ "D", "B", "A" }, { list[1].mob, list[2].mob, list[3].mob })
         end)
 
+        it("whom a mob attacks can come secret: nothing is tested, and it is not you, a pet or a player", function()
+            mob("nameplate1", "Wolf", "G1")
+            WowMock.units.nameplate1target = WowMock.units.party1
+            local secret = {}
+            _G.issecretvalue = function(v) return v == secret end
+            local saved = { _G.UnitIsUnit, _G.UnitIsPlayer, _G.UnitPlayerControlled }
+            _G.UnitIsUnit = function() return secret end
+            _G.UnitIsPlayer = function() return secret end
+            _G.UnitPlayerControlled = function() return secret end
+            local e = ns.Threat_Mobs(10)[1]
+            _G.issecretvalue = nil
+            _G.UnitIsUnit, _G.UnitIsPlayer, _G.UnitPlayerControlled = saved[1], saved[2], saved[3]
+            assert.are.equal("Wolf", e.mob)
+            assert.are.equal("Tank", e.who)
+            assert.is_false(e.isMe)
+            assert.is_false(e.isPet)
+            assert.is_nil(e.class)
+        end)
+
         it("units whose GUID cannot be read are counted as different mobs, not compared", function()
             mob("nameplate1", "Wolf", "G1")
             mob("nameplate2", "Boar", "G2")
-            _G.issecretvalue = function() return true end
+            _G.issecretvalue = function(v) return type(v) == "string" end -- the GUIDs
             assert.are.equal(2, #ns.Threat_Mobs(10))
             _G.issecretvalue = nil
         end)
