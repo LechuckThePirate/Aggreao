@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.1
 
 - Fix: Lua errors in the "Other mobs" section ("attempt to compare ... a secret string value"). The game
   hides the role, class and name of whom an enemy is attacking from addons in combat; they are now

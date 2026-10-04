@@ -12,12 +12,11 @@ local ISSUES_URL = "https://github.com/LechuckThePirate/Aggreao/issues"
 -- Mirrors the latest entry in CHANGELOG.md -- update this alongside it (and the version bump) on every
 -- release; shown as-is, scrollable, in the window below.
 local LATEST_CHANGELOG_TEXT = table.concat({
-    "- New: \"Show other mobs in combat\" (Preferences): under your target's list, one line per other mob you",
-    "  are fighting -- whom it is attacking, with a shield for the tank and a paw for pets; YOU in red when",
-    "  it is attacking you. Needs the enemy nameplates on (V).",
-    "- New: pets get a paw-print icon in the list.",
-    "- Faster \"about to pull\" alert, and it now also sounds when you take the aggro from your pet in one",
-    "  jump. It no longer sounds when the pet takes the aggro back.",
+    "- Fix: Lua errors in the \"Other mobs\" section (\"secret value\"): the game hides the role, class and name",
+    "  of whom an enemy is attacking, and the addon no longer compares, joins or measures them. A hidden",
+    "  name is shown as it is, without color or icon.",
+    "- 1.1.0: \"Show other mobs in combat\" (Preferences), tank shield and pet paw icons, a faster \"about to",
+    "  pull\" alert that also sounds when you take the aggro from your pet.",
 }, "\n")
 
 local welcomeFrame
