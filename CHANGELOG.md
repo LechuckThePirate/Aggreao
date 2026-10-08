@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- New: "Show other mobs in combat" is now on by default. If you had turned it off, your choice is kept.
+
 ## 1.1.2
 
 - Fix: Lua errors in the "Other mobs" section ("attempt to compare ... a secret string value"). The game

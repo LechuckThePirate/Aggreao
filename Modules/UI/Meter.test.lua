@@ -224,8 +224,17 @@ describe("Meter", function()
             WowMock.units[token .. "target"] = attackedBy
         end
 
-        it("off by default: no section even in combat", function()
+        it("on by default: the section shows in combat", function()
             start()
+            WowMock.inCombat = true
+            target()
+            otherMob("nameplate1", "Wolf", "G1", WowMock.units.party1)
+            FireEvent("PLAYER_TARGET_CHANGED")
+            assert.are.equal(1, #lines())
+        end)
+
+        it("off: no section even in combat", function()
+            start({ otherMobs = false })
             WowMock.inCombat = true
             target()
             otherMob("nameplate1", "Wolf", "G1", WowMock.units.party1)
