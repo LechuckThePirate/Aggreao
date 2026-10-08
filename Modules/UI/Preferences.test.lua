@@ -48,9 +48,9 @@ describe("Preferences", function()
         assert.is_true(_G.AggreaoMeterFrame:IsShown()) -- the preferences are open: it stays, to be placed
         prefs:Hide()
         assert.is_false(_G.AggreaoMeterFrame:IsShown()) -- closed, out of combat: hidden
-        assert.is_false(list[7]:GetChecked()) -- other mobs: off by default
-        list[7]:SetChecked(true); list[7]:Click()
-        assert.is_true(ns.char.otherMobs)
+        assert.is_true(list[7]:GetChecked()) -- other mobs: on by default
+        list[7]:SetChecked(false); list[7]:Click()
+        assert.is_false(ns.char.otherMobs)
         list[8]:SetChecked(false); list[8]:Click()
         assert.is_false(ns.char.alertSound)
         list[9]:SetChecked(false); list[9]:Click()
