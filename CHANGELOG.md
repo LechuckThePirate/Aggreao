@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.0
 
 - New: the welcome window links to the other addons of the same author, to copy and paste in a browser.
 - New: "Show other mobs in combat" is now on by default. If you had turned it off, your choice is kept.
