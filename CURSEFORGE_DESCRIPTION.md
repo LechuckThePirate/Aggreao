@@ -9,6 +9,11 @@ it warns you with a sound.
 
 Works on Retail, TBC Anniversary, Classic Era and WoW Forever.
 
+> **Enjoying Aggreao!!?** The same author makes more addons for WoW Forever, take a look:
+> - [**Embolsao!!**](https://www.curseforge.com/wow/addons/embolsao) -- one bag to rule them all: your bags and your bank in a single, clean window.
+> - [**Completao!!**](https://www.curseforge.com/wow/addons/completao-forever) -- every quest, in order: quest chain trees with map markers and TomTom waypoints.
+> - [**Fabrikao!!**](https://www.curseforge.com/projects/1733457) -- your professions companion: every recipe, where to learn it, and the way to get there.
+
 ![The aggro window: who has the aggro of your target, and how close you are to taking it](https://media.joanvilarino.online/aggreao/images/screencaps/main_window.png)
 
 ---
