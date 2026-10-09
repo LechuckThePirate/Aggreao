@@ -68,6 +68,7 @@ local es = {
     ["Found a bug or have an idea? Please report it on GitHub (click to select, then Ctrl+C):"] =
         "¿Has encontrado un error o tienes una idea? Cuéntalo en GitHub (clic para seleccionar y luego Ctrl+C):",
     ["Don't show this message again"] = "No volver a mostrar este mensaje",
+    ["More addons by the same author (click a link, then Ctrl+C):"] = "Más addons del mismo autor (clic en un enlace y Ctrl+C):",
     ["What's new in v%s:"] = "Novedades de la v%s:",
 }
 
