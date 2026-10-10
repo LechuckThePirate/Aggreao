@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fix: the welcome window is opaque, so when the welcome windows of several of the author's addons open together each one hides the previous one instead of showing through it.
+
 ## 1.2.0
 
 - New: the welcome window links to the other addons of the same author, to copy and paste in a browser.
