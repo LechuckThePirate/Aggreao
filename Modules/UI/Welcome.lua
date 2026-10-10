@@ -12,10 +12,7 @@ local ISSUES_URL = "https://github.com/LechuckThePirate/Aggreao/issues"
 -- Mirrors the latest entry in CHANGELOG.md -- update this alongside it (and the version bump) on every
 -- release; shown as-is, scrollable, in the window below.
 local LATEST_CHANGELOG_TEXT = table.concat({
-    "- New: \"Show other mobs in combat\" is now on by default. If you had turned it off, your choice is kept.",
-    "- New: this window links to the other addons of the same author.",
-    "- 1.1.2: Lua errors in the \"Other mobs\" section (\"secret value\") fixed: the game hides the role, class and",
-    "  name of whom an enemy is attacking, and the addon no longer compares, joins or measures them.",
+    "- Fix: the welcome window is opaque, so the welcome windows of several addons no longer show through each other.",
 }, "\n")
 
 -- The other addons of the same author, shown with their links.
