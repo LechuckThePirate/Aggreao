@@ -31,6 +31,7 @@ local function create()
     welcomeFrame:SetSize(WIDTH, HEIGHT)
     welcomeFrame:SetPoint("CENTER")
     welcomeFrame:SetFrameStrata("DIALOG")
+    welcomeFrame:SetToplevel(true) -- the welcome windows of several addons open at the same spot: the shown or clicked one comes in front, with its content
     welcomeFrame:SetClampedToScreen(true)
     welcomeFrame:SetBackdrop({
         bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
@@ -169,6 +170,7 @@ end
 function ns.Welcome_Show()
     if not welcomeFrame then create() end
     welcomeFrame:Show()
+    welcomeFrame:Raise() -- above the ones other addons showed before (a frame's content is drawn above another frame's background otherwise)
 end
 
 -- Shown once per login/reload (Aggreao.lua's PLAYER_ENTERING_WORLD), unless already dismissed for this
