@@ -12,7 +12,7 @@ local ISSUES_URL = "https://github.com/LechuckThePirate/Aggreao/issues"
 -- Mirrors the latest entry in CHANGELOG.md -- update this alongside it (and the version bump) on every
 -- release; shown as-is, scrollable, in the window below.
 local LATEST_CHANGELOG_TEXT = table.concat({
-    "- Fix: the welcome window is opaque, so the welcome windows of several addons no longer show through each other.",
+    "- Fix: the welcome windows of several addons no longer show through each other: each one opens in front, with all its content.",
 }, "\n")
 
 -- The other addons of the same author, shown with their links.
