@@ -170,9 +170,6 @@ end
 local MOB_TOKENS = { "focus", "boss1", "boss2", "boss3", "boss4", "boss5" }
 for i = 1, 40 do MOB_TOKENS[#MOB_TOKENS + 1] = "nameplate" .. i end
 
--- The tokens a mob can be reached through, in the order they are tried (see MOB_TOKENS above).
-function ns.Threat_MobTokens() return MOB_TOKENS end
-
 -- A hostile unit that is alive and fighting: the ones the lists are about.
 function ns.Threat_IsEnemyInCombat(unit)
     return yes(UnitExists(unit)) and yes(UnitCanAttack("player", unit)) and not yes(UnitIsDead(unit))

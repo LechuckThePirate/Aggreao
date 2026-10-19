@@ -2,22 +2,10 @@ local _, ns = ...
 local L = ns.L
 
 -- The enemy list, like the enmity list of other games: one row per mob that is fighting you, with its health and
--- your own hold on it (a colored strip: green = you have it as a tank, red = it is loose or on you...), and
--- the mob's target. Clicking a row targets that mob, so a tank sees at once which one is slipping away and
--- can click it to take it back.
---
--- Clicking is a protected action: only a secure button can target a unit, and the game does not let an addon
--- change a secure button (what it targets, where it is, whether it is shown) once combat starts. So:
---  * each row has a secure button over it, bound to a unit token ("nameplate3"...), and it keeps that unit
---    for the whole combat. The game itself shows the button only while the unit exists, can be attacked and is alive
---    (a state driver), and the token always means whatever mob has it right now, so a click never lands on a
---    mob that is not the one in the row;
---  * the buttons hang from UIParent, not from the window: a frame a protected one depends on (its parent, the
---    frame it is anchored to) becomes protected too, and the window has to change in combat;
---  * outside combat the buttons are bound again every refresh to the mobs that are around, so the list is ready
---    when the pull starts. In combat the rows keep their tokens: mobs that join afterwards are listed only if
---    their token was already bound, and the order is the order of the tokens.
--- Everything that touches a button is done only outside combat; what is asked in combat waits for it to end.
+-- your own hold on it (a colored strip: green = you have it as a tank, red = it is loose or on you...), and the
+-- mob's target. The one slipping away comes first, so a tank sees at once what to take back. For a tank, the loose
+-- mobs also get a red mark on their nameplate: the game does not let an addon target a mob from a list (a protected
+-- action that the nameplate units cannot be given to), so what the list does is show which nameplate to click.
 local WIDTH, ROW_H, PAD = 210, 20, 4
 local TITLE_H = 18
 local TOP = 3 + TITLE_H + 2 -- where the rows start
@@ -32,16 +20,13 @@ local HEALTH_COLOR = { 0.7, 0.15, 0.15, 0.9 }
 -- your hold on a mob
 local HELD, LOOSE, UNKNOWN, WARNING = { 0.2, 0.8, 0.2 }, { 1, 0.15, 0.15 }, { 1, 0.5, 0.1 }, { 1, 0.6, 0.1 }
 local OTHER_TANK = { 1, 0.85, 0.2 }
+local MOB_SEARCH = 40 -- mobs looked at before the first ones are kept
 
 local frame, message
-local rows, buttons = {}, {}
-local bound = {}    -- row -> the unit token its button has
-local driven = {}   -- row -> what its state driver was last given, so it is not set again for nothing
-local active = false     -- whether the list is on (changed only outside combat, with the buttons)
-local activeRows = 0     -- how many rows are on (idem)
-local layoutKey          -- where and how big the window and the buttons were last put
-local petMode            -- whether the buttons were last set for a player with a pet
-local testToken          -- while /aggreao test is on: the unit the first button is bound to
+local rows = {}
+local marks = {}       -- nameplate -> its mark
+local markedNow = {}   -- nameplates marked in the last redraw
+local active = false   -- whether the list is on right now
 
 local function rowTop(i) return TOP + (i - 1) * ROW_H end
 
@@ -55,11 +40,10 @@ end
 
 -- Whether the list is wanted: always, never, or (the default) when you are a tank -- or the game doesn't say
 -- what you are (older clients): better a list too many than none for a tank.
-local function wanted()
+local function wanted(role)
     local mode = ns.char.enemyListMode
     if mode == "always" then return true end
     if mode == "never" then return false end
-    local role = myRole()
     return role == nil or role == "TANK"
 end
 
@@ -79,7 +63,7 @@ function ns.Enemies_ModeName(key)
     return key
 end
 
--- Whether the list is on right now (it changes only outside combat, with the buttons).
+-- Whether the list is on right now.
 function ns.Enemies_IsActive() return active end
 
 -- Color of the strip: your hold on the mob.
@@ -93,6 +77,22 @@ local function holdColor(entry, role)
     if entry.isMe then return LOOSE end
     if (entry.pct or 0) >= ns.char.alertThreshold then return WARNING end
     return HELD
+end
+
+-- What needs you first: for a tank the mobs that are not on them (on a healer or a dps before on another tank),
+-- for the rest the ones that are on them. In a fixed order otherwise, so the rows don't jump.
+local function byUrgency(role)
+    return function(a, b)
+        if role == "TANK" then
+            if a.isMe ~= b.isMe then return b.isMe end
+            local aCovered, bCovered = a.role == "TANK" or a.isPet, b.role == "TANK" or b.isPet
+            if aCovered ~= bCovered then return bCovered end
+        elseif a.isMe ~= b.isMe then
+            return a.isMe
+        end
+        if a.sortName ~= b.sortName then return a.sortName < b.sortName end
+        return a.unit < b.unit
+    end
 end
 
 local function createRow(i)
@@ -147,209 +147,53 @@ local function windowOrigin()
     return (UIParent:GetWidth() / 2 - 250 - WIDTH / 2) / scale, (UIParent:GetHeight() / 2 + 120) / scale
 end
 
-local function windowHeight(count)
-    return TOP + count * ROW_H + PAD
-end
-
--- A secure button over each row. Tooltip: the mob, and what a click does.
-local function createButton(i)
-    local button = CreateFrame("Button", "AggreaoEnemyButton" .. i, UIParent, "SecureActionButtonTemplate")
-    button:RegisterForClicks("AnyUp")
-    button:SetAttribute("type1", "target")
-    button:SetFrameStrata("HIGH")
-    button:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-    button:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        local unit = self:GetAttribute("unit")
-        if unit and not pcall(GameTooltip.SetUnit, GameTooltip, unit) then GameTooltip:SetText("Aggreao!!") end
-        GameTooltip:AddLine(self:GetAttribute("type1") == "macro" and L["Click: target this enemy and send your pet"]
-            or L["Click: target this enemy"], 0.7, 0.7, 0.7)
-        GameTooltip:Show()
-    end)
-    button:SetScript("OnLeave", GameTooltip_Hide)
-    button.test = button:CreateTexture(nil, "OVERLAY") -- /aggreao test: shows where the test button is
-    button.test:SetAllPoints()
-    button.test:SetColorTexture(0, 1, 0, 0.35)
-    button.test:Hide()
-    button:HookScript("PreClick", function(self, mouseButton)
-        if ns.debugClicks then
-            ns.Print(("click %s on %s: type1=%s unit=%s"):format(tostring(mouseButton), self:GetName() or "?",
-                tostring(self:GetAttribute("type1")), tostring(self:GetAttribute("unit"))))
-        end
-    end)
-    return button
-end
-
-local function setDriver(i, conditions)
-    if driven[i] == conditions then return end
-    driven[i] = conditions
-    RegisterStateDriver(buttons[i], "visibility", conditions)
-end
-
--- The units around that can be attacked, the ones already fighting first: what the rows are bound to. Where there
--- are fewer than rows, the rest are bound to the next nameplate tokens, so a mob that shows up later has a row.
-local function pickTokens(count)
-    local picked, used = {}, {}
-    local function take(unit)
-        for _, other in ipairs(picked) do
-            if yes(UnitIsUnit(unit, other)) then return end -- one mob, many tokens (focus, nameplate...)
-        end
-        picked[#picked + 1] = unit
-        used[unit] = true
-    end
-    for pass = 1, 2 do
-        for _, unit in ipairs(ns.Threat_MobTokens()) do
-            if #picked >= count then break end
-            if yes(UnitExists(unit)) and yes(UnitCanAttack("player", unit)) and not yes(UnitIsDead(unit))
-                and (yes(UnitAffectingCombat(unit)) == (pass == 1)) then
-                take(unit)
-            end
-        end
-    end
-    for _, unit in ipairs(ns.Threat_MobTokens()) do
-        if #picked >= count then break end
-        if not used[unit] and unit:find("^nameplate") then
-            picked[#picked + 1] = unit
-            used[unit] = true
-        end
-    end
-    return picked
-end
-
--- Outside combat only: puts the window and the buttons where the settings say, and binds the buttons.
-local function settle()
+-- Where the window is and how it looks, from the settings (it is anchored by its top left corner, so it grows down).
+local layoutKey
+local function applyLayout()
     local scale = ns.char.scale
     local x, y = windowOrigin()
-    local count = active and ns.char.enemyRows or 0
-    local key = table.concat({ tostring(x), tostring(y), tostring(scale), tostring(ns.char.opacity), tostring(active),
-        tostring(count) }, ":")
-    if layoutKey ~= key then
-        layoutKey = key
-        frame:SetScale(scale)
-        frame:ClearAllPoints()
-        frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
-        frame:SetBackdropColor(0, 0, 0, ns.char.opacity)
-        for i = 1, MAX_ROWS do
-            local button = buttons[i]
-            button:SetScale(scale)
-            button:ClearAllPoints()
-            button:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x + PAD, y - rowTop(i))
-            button:SetSize(WIDTH - 2 * PAD, ROW_H - 1)
-        end
+    local key = table.concat({ tostring(x), tostring(y), tostring(scale), tostring(ns.char.opacity) }, ":")
+    if layoutKey == key then return end
+    layoutKey = key
+    frame:SetScale(scale)
+    frame:ClearAllPoints()
+    frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
+    frame:SetBackdropColor(0, 0, 0, ns.char.opacity)
+end
+
+-- The red mark that goes on a loose mob's nameplate: where to click to take it back.
+local function createMark(plate)
+    local mark = CreateFrame("Frame", nil, plate)
+    mark:SetSize(20, 24)
+    mark:SetPoint("RIGHT", plate, "LEFT", 4, 0)
+    mark:SetFrameLevel(plate:GetFrameLevel() + 10)
+    mark.text = mark:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
+    mark.text:SetPoint("CENTER")
+    mark.text:SetText("!")
+    mark.text:SetTextColor(LOOSE[1], LOOSE[2], LOOSE[3])
+    return mark
+end
+
+-- Marks the nameplates of `entries` (the loose mobs of a tank) and clears the ones marked before.
+local function updateMarks(entries)
+    for plate in pairs(markedNow) do
+        if marks[plate] then marks[plate]:Hide() end
+        markedNow[plate] = nil
     end
-    local tokens = active and pickTokens(count) or {}
-    -- with a pet, a click also sends it at that mob (a hunter's pet then takes the one that is running at them)
-    local pet = yes(UnitExists("pet"))
-    for i = 1, MAX_ROWS do
-        local token = tokens[i]
-        if not (i == 1 and testToken) then -- (/aggreao test has the first button while it is on)
-            if token ~= bound[i] or pet ~= petMode then
-                bound[i] = token
-                local button = buttons[i]
-                if token then button:SetAttribute("unit", token) end
-                if pet and token then
-                    button:SetAttribute("type1", "macro")
-                    -- (plain /target <unit>, then the pet attacks what is targeted: the forms every client understands)
-                    button:SetAttribute("macrotext1", ("/target %s\n/petattack"):format(token))
-                else
-                    button:SetAttribute("type1", "target")
-                    button:SetAttribute("macrotext1", nil)
-                end
+    if not (C_NamePlate and C_NamePlate.GetNamePlateForUnit) then return end
+    for _, entry in ipairs(entries) do
+        local plate = C_NamePlate.GetNamePlateForUnit(entry.unit)
+        if plate then
+            if not marks[plate] then
+                local ok, mark = pcall(createMark, plate)
+                marks[plate] = ok and mark or nil
             end
-            setDriver(i, token and ("[@%s,harm,nodead,combat] show; hide"):format(token) or "hide")
+            if marks[plate] then
+                marks[plate]:Show()
+                markedNow[plate] = true
+            end
         end
     end
-    petMode = pet
-end
-
--- /aggreao test: an experiment, outside combat. The first button is bound to a hostile mob that is around, with the plain
--- "target" action on its unit, and is always shown (a green square over the first row): click it and see if the game
--- targets a nameplate unit from a secure button. Again to turn it off.
-function ns.Enemies_Test()
-    if not frame then return end
-    if InCombatLockdown() then
-        ns.Print("not in combat, please")
-        return
-    end
-    local b = buttons[1]
-    if testToken then
-        testToken = nil
-        b.test:Hide()
-        bound[1], driven[1], petMode = nil, nil, nil -- settle() sets it again
-        ns.Print("test off")
-        ns.Enemies_Update()
-        return
-    end
-    for _, unit in ipairs(ns.Threat_MobTokens()) do
-        if yes(UnitExists(unit)) and yes(UnitCanAttack("player", unit)) and not yes(UnitIsDead(unit)) then
-            testToken = unit
-            break
-        end
-    end
-    if not testToken then
-        ns.Print("no hostile mob with a nameplate around: point the camera at one")
-        return
-    end
-    b:SetAttribute("type1", "target")
-    b:SetAttribute("macrotext1", nil)
-    b:SetAttribute("unit", testToken)
-    setDriver(1, "show")
-    b.test:Show()
-    ns.debugClicks = true
-    ns.Print(("test on: button 1 is bound to %s (%s). Open the preferences (so the window shows) and click the green square."):format(
-        testToken, tostring(ns.Plain(UnitName(testToken)))))
-end
-
--- For when a click does nothing (/aggreao enemies): what each button is bound to and whether it is there.
-function ns.Enemies_Debug()
-    ns.Print(("enemy list: active=%s rows=%s lockdown=%s pet=%s mode=%s"):format(tostring(active), tostring(activeRows),
-        tostring(InCombatLockdown()), tostring(petMode), tostring(ns.char.enemyListMode)))
-    for i = 1, activeRows do
-        local b = buttons[i]
-        if b then
-            ns.Print(("%d: unit=%s type1=%s shown=%s visible=%s mouse=%s size=%sx%s left=%s top=%s scale=%s driver=%s"):format(
-                i, tostring(b:GetAttribute("unit")), tostring(b:GetAttribute("type1")), tostring(b:IsShown()),
-                tostring(b:IsVisible()), tostring(b:IsMouseEnabled()), tostring(b:GetWidth()), tostring(b:GetHeight()),
-                tostring(b:GetLeft()), tostring(b:GetTop()), tostring(b:GetScale()), tostring(driven[i])))
-        end
-    end
-    -- what the game itself makes of each button's conditions, and what is really on each token
-    for i = 1, activeRows do
-        local token = bound[i]
-        if token then
-            local parsed = SecureCmdOptionParse and SecureCmdOptionParse(driven[i] or "") or "?"
-            ns.Print(("%d: %s exists=%s attack=%s dead=%s inCombat=%s -> game says %s"):format(i, token,
-                tostring(yes(UnitExists(token))), tostring(yes(UnitCanAttack("player", token))),
-                tostring(yes(UnitIsDead(token))), tostring(yes(UnitAffectingCombat("player"))), tostring(parsed)))
-        end
-    end
-    local around = {}
-    for _, unit in ipairs(ns.Threat_MobTokens()) do
-        if yes(UnitExists(unit)) then
-            around[#around + 1] = ("%s=%s%s"):format(unit, tostring(ns.Plain(UnitName(unit))),
-                yes(UnitCanAttack("player", unit)) and (yes(UnitAffectingCombat(unit)) and "(hostile,fighting)" or "(hostile)") or "")
-        end
-    end
-    ns.Print("tokens in use: " .. (#around > 0 and table.concat(around, ", ") or "none"))
-    if frame then
-        ns.Print(("window: shown=%s mouse=%s left=%s top=%s scale=%s strata=%s"):format(tostring(frame:IsShown()),
-            tostring(frame:IsMouseEnabled()), tostring(frame:GetLeft()), tostring(frame:GetTop()),
-            tostring(frame:GetScale()), tostring(frame:GetFrameStrata())))
-    end
-end
-
--- /aggreao where: in 3 seconds, the frame under the mouse (point at the window or a row meanwhile).
-function ns.Enemies_Where()
-    ns.Print("pointing at what? 3 seconds...")
-    C_Timer.After(3, function()
-        local focus = GetMouseFoci and GetMouseFoci() or { GetMouseFocus and GetMouseFocus() or nil }
-        if #focus == 0 then ns.Print("nothing under the mouse") end
-        for _, f in ipairs(focus) do
-            local parent = f.GetParent and f:GetParent()
-            ns.Print(("under the mouse: %s (%s), parent %s"):format(tostring(f.GetName and f:GetName()),
-                tostring(f.GetObjectType and f:GetObjectType()), tostring(parent and parent.GetName and parent:GetName())))
-        end
-    end)
 end
 
 function ns.Enemies_ApplySettings()
@@ -363,7 +207,7 @@ end
 
 local function create()
     frame = CreateFrame("Frame", "AggreaoEnemiesFrame", UIParent, "BackdropTemplate")
-    frame:SetSize(WIDTH, windowHeight(1))
+    frame:SetSize(WIDTH, TOP + ROW_H + PAD)
     frame:SetFrameStrata("MEDIUM")
     frame:SetClampedToScreen(true)
     frame:SetBackdrop(BACKDROP)
@@ -371,19 +215,12 @@ local function create()
     frame:SetMovable(true)
     frame:EnableMouse(true)
     frame:RegisterForDrag("LeftButton")
-    -- (unlike the aggro window it takes the mouse in combat too: it is the one you click then. Only moving it waits,
-    -- because the buttons over the rows can't be moved in combat)
     frame:SetScript("OnDragStart", function(self)
-        if ns.char.locked then return end
-        if InCombatLockdown() then
-            ns.Print(L["The enemy list can't be moved in combat. Open the preferences out of combat to place it."])
-            return
-        end
-        self:StartMoving()
+        if not ns.char.locked then self:StartMoving() end
     end)
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
-        -- saved as the top left corner, the point the rows are counted from (the buttons are put there too)
+        -- saved as the top left corner, the point the window is anchored by
         local left, top = self:GetLeft(), self:GetTop()
         if left and top then ns.char.enemyWindow = { x = left, y = top } end
         ns.Enemies_Update()
@@ -409,9 +246,7 @@ local function create()
         ns.char.enemyListMode = "never"
         ns.Enemies_Update()
         if ns.Prefs_Refresh then ns.Prefs_Refresh() end
-        -- (in combat the buttons stay until it ends, and so does the window)
-        ns.Print(InCombatLockdown() and L["The enemy list closes when the combat ends. Show it again in the preferences."]
-            or L["Enemy list closed. Show it again in the preferences."])
+        ns.Print(L["Enemy list closed. Show it again in the preferences."])
     end)
     frame.close = close
 
@@ -442,7 +277,7 @@ function ns.Enemies_Init()
     ns.Enemies_Update()
 end
 
-local function draw(row, entry, role, token)
+local function draw(row, entry, role)
     local color = holdColor(entry, role)
     row.strip:SetColorTexture(color[1], color[2], color[3], 1)
     row:SetStatusBarColor(unpack(HEALTH_COLOR))
@@ -451,7 +286,7 @@ local function draw(row, entry, role, token)
     row:SetValue(entry.health or 0)
     row.name:SetText(entry.mob)
     row.hp:SetText(entry.healthPct and ("%d%%"):format(math.floor(entry.healthPct + 0.5)) or "")
-    row.sel:SetShown(yes(UnitIsUnit(token, "target")))
+    row.sel:SetShown(yes(UnitIsUnit(entry.unit, "target")))
     -- whom it attacks: YOU, or the name in the class color with your threat on the mob. A name hidden from addons is
     -- only handed over as it is (no color, no text added).
     local hidden = entry.whoSecret and not entry.isMe
@@ -477,52 +312,40 @@ end
 -- Redraws the list. Called with every refresh of the aggro window.
 function ns.Enemies_Update()
     if not frame then return end
-    local locked = InCombatLockdown()
-    if not locked then
-        for i = 1, MAX_ROWS do
-            buttons[i] = buttons[i] or createButton(i)
-        end
-        active = wanted()
-        activeRows = active and ns.char.enemyRows or 0
-        settle()
-    end
-    local inCombat = yes(UnitAffectingCombat("player"))
+    local role = myRole()
+    active = wanted(role)
+    applyLayout()
     updateLock()
+    local inCombat = yes(UnitAffectingCombat("player"))
     -- out of combat it is only there to be placed, while the preferences are open
-    local show = active and (inCombat or ns.Prefs_IsShown())
-    if not show then
+    if not (active and (inCombat or ns.Prefs_IsShown())) then
         frame:Hide()
+        updateMarks({})
         return
     end
-    local role = myRole()
-    local shown = 0
-    local tokens = {}
-    for i = 1, activeRows do
+    local list = inCombat and ns.Threat_Mobs(MOB_SEARCH) or {}
+    table.sort(list, byUrgency(role))
+    local count = math.min(#list, math.min(ns.char.enemyRows, MAX_ROWS))
+    local loose = {}
+    for i = 1, count do
         local row = rows[i] or createRow(i)
         rows[i] = row
-        local token = bound[i]
-        local entry
-        if inCombat and token and ns.Threat_IsEnemyInCombat(token) then
-            entry = ns.Threat_Mob(token)
-            for _, other in ipairs(tokens) do
-                if yes(UnitIsUnit(token, other)) then entry = nil break end -- a mob under two tokens: once
-            end
-        end
-        if entry then
-            tokens[#tokens + 1] = token
-            shown = shown + 1
-            draw(row, entry, role, token)
-        else
-            row:Hide()
+        draw(row, list[i], role)
+    end
+    for i = count + 1, #rows do rows[i]:Hide() end
+    -- the nameplates of the mobs that are loose, all of them, listed or not
+    if role == "TANK" and ns.char.enemyMarks then
+        for _, entry in ipairs(list) do
+            if holdColor(entry, role) == LOOSE then loose[#loose + 1] = entry end
         end
     end
-    for i = activeRows + 1, #rows do rows[i]:Hide() end
-    if shown == 0 then
+    updateMarks(loose)
+    if count == 0 then
         message:SetText(inCombat and L["No enemies"] or L["Not in combat"])
         message:Show()
     else
         message:Hide()
     end
-    frame:SetHeight(windowHeight(activeRows))
+    frame:SetHeight(TOP + math.max(count, 1) * ROW_H + PAD)
     frame:Show()
 end

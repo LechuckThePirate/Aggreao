@@ -44,7 +44,8 @@ local es = {
     ["Show role icons (tank, healer, dps)"] = "Mostrar iconos de rol (tanque, sanador, dps)",
     ["Include pets"] = "Incluir mascotas",
     ["Show other mobs in combat (if the enemy list is off)"] = "Mostrar otros mobs en combate (si la lista de enemigos está apagada)",
-    ["Enemy list (click to target): %s"] = "Lista de enemigos (clic para fijar): %s",
+    ["Enemy list: %s"] = "Lista de enemigos: %s",
+    ["Tank: mark the loose enemies on their nameplate"] = "Tanque: marcar en su placa a los enemigos sueltos",
     ["Only as tank"] = "Solo como tanque",
     ["Always"] = "Siempre",
     ["Never"] = "Nunca",
@@ -54,14 +55,8 @@ local es = {
     -- enemy list
     ["Enemies"] = "Enemigos",
     ["No enemies"] = "Sin enemigos",
-    ["Click: target this enemy"] = "Clic: fijar a este enemigo",
-    ["Click: target this enemy and send your pet"] = "Clic: fijar a este enemigo y mandar a tu mascota",
     ["Enemy list closed. Show it again in the preferences."] =
         "Lista de enemigos cerrada. Vuelve a mostrarla en las preferencias.",
-    ["The enemy list closes when the combat ends. Show it again in the preferences."] =
-        "La lista de enemigos se cierra al acabar el combate. Vuelve a mostrarla en las preferencias.",
-    ["The enemy list can't be moved in combat. Open the preferences out of combat to place it."] =
-        "La lista de enemigos no se puede mover en combate. Abre las preferencias fuera de combate para colocarla.",
     ["YOU"] = "TÚ",
     ["Needs the enemy nameplates on (V key)."] = "Necesita las placas de enemigos activadas (tecla V).",
     ["Needs the enemy nameplates on (V key). They are off now."] =

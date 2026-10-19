@@ -4,11 +4,12 @@
 
 - New: the enemy list, a window with every mob that is fighting you: its name, its health, whom it is attacking and
   your own threat on it, and a strip that shows at a glance whether you hold it (as a tank: green = yours, red = loose
-  or on a healer or dps). Click a row to target that mob; with a pet, the click also sends the pet at it. It appears in
-  combat, by default only when you are a tank (or the game doesn't say what you are); the preferences also offer
-  "Always" and "Never", and how many enemies it lists. The game does not allow changing what a click targets once combat starts, so the rows
-  are bound to the mobs around you before the pull and keep their order during the fight. With the enemy list on,
-  the aggro window no longer shows its "Other mobs" section.
+  or on a healer or dps). The mobs that need you first (a tank: the ones that are not on them) come first.
+- New: as a tank, a red "!" on the nameplate of each mob that is not on you, so you know which one to click to take it
+  back (the game does not let an addon target a mob from a list). It can be turned off in the preferences.
+- New: the enemy list appears in combat, by default only when you are a tank (or the game doesn't say what you are);
+  the preferences also offer "Always" and "Never", and how many enemies it lists. With it on, the aggro window no
+  longer shows its "Other mobs" section.
 
 ## 1.2.2
 
