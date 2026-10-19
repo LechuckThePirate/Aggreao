@@ -268,6 +268,24 @@ function ns.Enemies_Debug()
                 tostring(b:GetLeft()), tostring(b:GetTop()), tostring(b:GetScale()), tostring(driven[i])))
         end
     end
+    -- what the game itself makes of each button's conditions, and what is really on each token
+    for i = 1, activeRows do
+        local token = bound[i]
+        if token then
+            local parsed = SecureCmdOptionParse and SecureCmdOptionParse(driven[i] or "") or "?"
+            ns.Print(("%d: %s exists=%s attack=%s dead=%s inCombat=%s -> game says %s"):format(i, token,
+                tostring(yes(UnitExists(token))), tostring(yes(UnitCanAttack("player", token))),
+                tostring(yes(UnitIsDead(token))), tostring(yes(UnitAffectingCombat("player"))), tostring(parsed)))
+        end
+    end
+    local around = {}
+    for _, unit in ipairs(ns.Threat_MobTokens()) do
+        if yes(UnitExists(unit)) then
+            around[#around + 1] = ("%s=%s%s"):format(unit, tostring(ns.Plain(UnitName(unit))),
+                yes(UnitCanAttack("player", unit)) and (yes(UnitAffectingCombat(unit)) and "(hostile,fighting)" or "(hostile)") or "")
+        end
+    end
+    ns.Print("tokens in use: " .. (#around > 0 and table.concat(around, ", ") or "none"))
     if frame then
         ns.Print(("window: shown=%s mouse=%s left=%s top=%s scale=%s strata=%s"):format(tostring(frame:IsShown()),
             tostring(frame:IsMouseEnabled()), tostring(frame:GetLeft()), tostring(frame:GetTop()),
