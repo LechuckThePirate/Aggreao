@@ -149,16 +149,21 @@ describe("Enemies", function()
             assert.is_false(frame:IsShown())
         end)
 
-        it("is click-through in combat and takes the mouse again outside it", function()
-            start()
+        it("takes the mouse in combat too (it is the window you click then); only moving it waits", function()
+            start({})
             assert.is_true(frame:IsMouseEnabled())
             enterCombat()
-            assert.is_false(frame:IsMouseEnabled())
-            assert.is_false(frame.close:IsMouseEnabled())
+            assert.is_true(frame:IsMouseEnabled())
+            local moved = false
+            frame.StartMoving = function() moved = true end
+            frame._scripts.OnDragStart(frame)
+            assert.is_false(moved)
+            assert.matches("can't be moved in combat", WowMock.printed[#WowMock.printed])
             WowMock.inCombat = false
             FireEvent("PLAYER_REGEN_ENABLED")
             ns.Meter_Update()
-            assert.is_true(frame:IsMouseEnabled())
+            frame._scripts.OnDragStart(frame)
+            assert.is_true(moved)
         end)
 
         it("dragging saves the top left corner; locked, it does not start a move", function()
@@ -195,10 +200,18 @@ describe("Enemies", function()
             assert.are.same({ "Interface\\Buttons\\LockButton-Locked-Up" }, frame.lock._set.SetNormalTexture)
         end)
 
-        it("the padlock does not take the mouse in combat", function()
-            start()
+        it("in combat the padlock works, and the close button turns it off when the combat ends", function()
+            start({})
             enterCombat()
-            assert.is_false(frame.lock:IsMouseEnabled())
+            frame.lock:Click()
+            assert.is_true(ns.char.locked)
+            assert.has_no.errors(function() frame.close:Click() end)
+            assert.matches("closes when the combat ends", WowMock.printed[#WowMock.printed])
+            assert.is_true(frame:IsShown()) -- the buttons stay until then, so does the window
+            WowMock.inCombat = false
+            FireEvent("PLAYER_REGEN_ENABLED")
+            ns.Meter_Update()
+            assert.is_false(frame:IsShown())
         end)
 
         it("right-click opens the preferences", function()

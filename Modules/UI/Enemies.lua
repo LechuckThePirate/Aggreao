@@ -41,7 +41,6 @@ local active = false     -- whether the list is on (changed only outside combat,
 local activeRows = 0     -- how many rows are on (idem)
 local layoutKey          -- where and how big the window and the buttons were last put
 local petMode            -- whether the buttons were last set for a player with a pet
-local mouseEnabled
 
 local function rowTop(i) return TOP + (i - 1) * ROW_H end
 
@@ -126,17 +125,6 @@ local function createRow(i)
     row.name:SetJustifyH("LEFT")
     row.name:SetWordWrap(false)
     return row
-end
-
--- The mouse goes through the window in combat (clicks are for the game behind it, as in the aggro window);
--- the secure buttons are the only thing that takes it then.
-local function applyMouse(inCombat)
-    local enabled = not inCombat
-    if mouseEnabled == enabled then return end
-    mouseEnabled = enabled
-    frame:EnableMouse(enabled)
-    frame.close:EnableMouse(enabled)
-    frame.lock:EnableMouse(enabled)
 end
 
 -- The padlock is the aggro window's too (one setting for both): its picture says whether they can be moved.
@@ -280,8 +268,15 @@ local function create()
     frame:SetMovable(true)
     frame:EnableMouse(true)
     frame:RegisterForDrag("LeftButton")
+    -- (unlike the aggro window it takes the mouse in combat too: it is the one you click then. Only moving it waits,
+    -- because the buttons over the rows can't be moved in combat)
     frame:SetScript("OnDragStart", function(self)
-        if not ns.char.locked and not InCombatLockdown() then self:StartMoving() end
+        if ns.char.locked then return end
+        if InCombatLockdown() then
+            ns.Print(L["The enemy list can't be moved in combat."])
+            return
+        end
+        self:StartMoving()
     end)
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
@@ -311,7 +306,9 @@ local function create()
         ns.char.enemyListMode = "never"
         ns.Enemies_Update()
         if ns.Prefs_Refresh then ns.Prefs_Refresh() end
-        ns.Print(L["Enemy list closed. Show it again in the preferences."])
+        -- (in combat the buttons stay until it ends, and so does the window)
+        ns.Print(InCombatLockdown() and L["The enemy list closes when the combat ends. Show it again in the preferences."]
+            or L["Enemy list closed. Show it again in the preferences."])
     end)
     frame.close = close
 
@@ -387,7 +384,6 @@ function ns.Enemies_Update()
         settle()
     end
     local inCombat = yes(UnitAffectingCombat("player"))
-    applyMouse(inCombat)
     updateLock()
     -- out of combat it is only there to be placed, while the preferences are open
     local show = active and (inCombat or ns.Prefs_IsShown())

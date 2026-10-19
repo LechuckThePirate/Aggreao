@@ -58,6 +58,9 @@ local es = {
     ["Click: target this enemy and send your pet"] = "Clic: fijar a este enemigo y mandar a tu mascota",
     ["Enemy list closed. Show it again in the preferences."] =
         "Lista de enemigos cerrada. Vuelve a mostrarla en las preferencias.",
+    ["The enemy list closes when the combat ends. Show it again in the preferences."] =
+        "La lista de enemigos se cierra al acabar el combate. Vuelve a mostrarla en las preferencias.",
+    ["The enemy list can't be moved in combat."] = "La lista de enemigos no se puede mover en combate.",
     ["YOU"] = "TÚ",
     ["Needs the enemy nameplates on (V key)."] = "Necesita las placas de enemigos activadas (tecla V).",
     ["Needs the enemy nameplates on (V key). They are off now."] =
