@@ -179,6 +179,28 @@ describe("Enemies", function()
             assert.is_true(moved)
         end)
 
+        it("has its own padlock, the aggro window's too: it unlocks both and shows the state", function()
+            start({ locked = true })
+            ns.Prefs_Toggle()
+            assert.are.same({ "Interface\\Buttons\\LockButton-Locked-Up" }, frame.lock._set.SetNormalTexture)
+            frame.lock:Click()
+            assert.is_false(ns.char.locked)
+            assert.are.same({ "Interface\\Buttons\\LockButton-Unlocked-Up" }, frame.lock._set.SetNormalTexture)
+            local moved = false
+            frame.StartMoving = function() moved = true end
+            frame._scripts.OnDragStart(frame)
+            assert.is_true(moved)
+            -- the padlock of the aggro window changes the picture here too
+            _G.AggreaoMeterFrame.lock:Click()
+            assert.are.same({ "Interface\\Buttons\\LockButton-Locked-Up" }, frame.lock._set.SetNormalTexture)
+        end)
+
+        it("the padlock does not take the mouse in combat", function()
+            start()
+            enterCombat()
+            assert.is_false(frame.lock:IsMouseEnabled())
+        end)
+
         it("right-click opens the preferences", function()
             start()
             frame._scripts.OnMouseUp(frame, "RightButton")

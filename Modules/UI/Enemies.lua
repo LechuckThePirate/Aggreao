@@ -136,6 +136,18 @@ local function applyMouse(inCombat)
     mouseEnabled = enabled
     frame:EnableMouse(enabled)
     frame.close:EnableMouse(enabled)
+    frame.lock:EnableMouse(enabled)
+end
+
+-- The padlock is the aggro window's too (one setting for both): its picture says whether they can be moved.
+local function updateLock()
+    local locked = ns.char.locked and true or false
+    if frame.lockedShown == locked then return end
+    frame.lockedShown = locked
+    local texture = locked and "Interface\\Buttons\\LockButton-Locked-Up"
+        or "Interface\\Buttons\\LockButton-Unlocked-Up"
+    frame.lock:SetNormalTexture(texture)
+    frame.lock:SetPushedTexture(texture)
 end
 
 local function windowOrigin()
@@ -302,6 +314,19 @@ local function create()
     end)
     frame.close = close
 
+    local lock = CreateFrame("Button", nil, frame)
+    lock:SetSize(14, 14)
+    lock:SetPoint("TOPLEFT", 5, -3)
+    lock:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+    lock:SetScript("OnClick", function() ns.Meter_SetLocked(not ns.char.locked) end)
+    lock:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(ns.char.locked and L["Unlock position"] or L["Lock position"], 1, 1, 1)
+        GameTooltip:Show()
+    end)
+    lock:SetScript("OnLeave", GameTooltip_Hide)
+    frame.lock = lock
+
     message = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     message:SetPoint("TOPLEFT", PAD + 2, -TOP)
     message:SetPoint("TOPRIGHT", -PAD - 2, -TOP)
@@ -362,6 +387,7 @@ function ns.Enemies_Update()
     end
     local inCombat = yes(UnitAffectingCombat("player"))
     applyMouse(inCombat)
+    updateLock()
     -- out of combat it is only there to be placed, while the preferences are open
     local show = active and (inCombat or ns.Prefs_IsShown())
     if not show then
