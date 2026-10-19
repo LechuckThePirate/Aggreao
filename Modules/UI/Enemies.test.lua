@@ -480,7 +480,7 @@ describe("Enemies", function()
             ns.Meter_Update()
             local b = buttons()[1]
             assert.are.equal("macro", b:GetAttribute("type1"))
-            assert.are.equal("/target [@nameplate5]\n/petattack [@nameplate5]", b:GetAttribute("macrotext1"))
+            assert.are.equal("/target nameplate5\n/petattack", b:GetAttribute("macrotext1"))
             WowMock.units.pet = nil -- the pet is dismissed
             ns.Meter_Update()
             assert.are.equal("target", b:GetAttribute("type1"))

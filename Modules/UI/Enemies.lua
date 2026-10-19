@@ -249,7 +249,8 @@ local function settle()
             if token then button:SetAttribute("unit", token) end
             if pet and token then
                 button:SetAttribute("type1", "macro")
-                button:SetAttribute("macrotext1", ("/target [@%s]\n/petattack [@%s]"):format(token, token))
+                -- (plain /target <unit>, then the pet attacks what is targeted: the forms every client understands)
+                button:SetAttribute("macrotext1", ("/target %s\n/petattack"):format(token))
             else
                 button:SetAttribute("type1", "target")
                 button:SetAttribute("macrotext1", nil)
