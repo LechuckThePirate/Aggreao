@@ -355,7 +355,7 @@ function ns.Meter_Update()
         alertShown = false
     end
     -- (the enemy list shows them, and more, in a window of its own)
-    if ns.char.otherMobs and inCombat and not ns.char.enemyList then
+    if ns.char.otherMobs and inCombat and not ns.Enemies_IsActive() then
         others = ns.Threat_Mobs(OTHER_MOBS_MAX, validMob)
     end
     if not ns.char.enabled then

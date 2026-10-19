@@ -44,7 +44,10 @@ local es = {
     ["Show role icons (tank, healer, dps)"] = "Mostrar iconos de rol (tanque, sanador, dps)",
     ["Include pets"] = "Incluir mascotas",
     ["Show other mobs in combat (if the enemy list is off)"] = "Mostrar otros mobs en combate (si la lista de enemigos está apagada)",
-    ["Show the enemy list (click an enemy to target it)"] = "Mostrar la lista de enemigos (clic en un enemigo para fijarlo)",
+    ["Enemy list (click to target): %s"] = "Lista de enemigos (clic para fijar): %s",
+    ["Only as tank"] = "Solo como tanque",
+    ["Always"] = "Siempre",
+    ["Never"] = "Nunca",
     ["Enemies listed: %d"] = "Enemigos en la lista: %d",
     ["Other mobs"] = "Otros mobs",
 
@@ -52,6 +55,7 @@ local es = {
     ["Enemies"] = "Enemigos",
     ["No enemies"] = "Sin enemigos",
     ["Click: target this enemy"] = "Clic: fijar a este enemigo",
+    ["Click: target this enemy and send your pet"] = "Clic: fijar a este enemigo y mandar a tu mascota",
     ["Enemy list closed. Show it again in the preferences."] =
         "Lista de enemigos cerrada. Vuelve a mostrarla en las preferencias.",
     ["YOU"] = "TÚ",

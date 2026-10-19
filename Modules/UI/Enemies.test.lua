@@ -73,16 +73,79 @@ describe("Enemies", function()
         end)
 
         it("off in the settings: never shown", function()
-            start({ locked = true, enemyList = false })
+            start({ locked = true, enemyListMode = "never" })
             enterCombat()
             assert.is_false(frame:IsShown())
+        end)
+
+        describe("who gets it", function()
+            local function playerIs(role, class)
+                WowMock.group = { size = 3 }
+                WowMock.AddUnit("player", "Me", class or "WARRIOR", role)
+                WowMock.AddUnit("party1", "Healer", "PRIEST", "HEALER")
+            end
+
+            it("by default a tank gets it", function()
+                playerIs("TANK")
+                StartAddon(ns, nil, { locked = true })
+                enterCombat()
+                assert.is_true(_G.AggreaoEnemiesFrame:IsShown())
+                assert.is_true(ns.Enemies_IsActive())
+            end)
+
+            it("by default a dps or a healer does not, and sees the other mobs in the aggro window instead", function()
+                playerIs("DAMAGER")
+                StartAddon(ns, nil, { locked = true })
+                enterCombat()
+                assert.is_false(_G.AggreaoEnemiesFrame:IsShown())
+                assert.is_false(ns.Enemies_IsActive())
+                for _, button in ipairs(buttons()) do
+                    assert.are.equal("hide", WowMock.drivers[button].visibility)
+                end
+                mob("nameplate1", "Wolf", WowMock.units.party1)
+                ns.Meter_Update()
+                assert.are.equal(1, #WowMock.FindAll(function(f)
+                    return f._parent == _G.AggreaoMeterFrame and f.mob ~= nil and f._shown
+                end))
+            end)
+
+            it("by default it is shown when the game does not say what you are", function()
+                WowMock.group = nil
+                StartAddon(ns, nil, { locked = true }) -- alone, no role: the game gives none
+                _G.UnitGroupRolesAssigned = function() return "NONE" end
+                WowMock.class = { "Warrior", "WARRIOR", 1 }
+                ns.Meter_Update()
+                assert.is_true(ns.Enemies_IsActive())
+            end)
+
+            it("'always' gives it to a dps too; 'never' takes it from a tank", function()
+                playerIs("DAMAGER")
+                StartAddon(ns, nil, { locked = true, enemyListMode = "always" })
+                assert.is_true(ns.Enemies_IsActive())
+                ns.char.enemyListMode = "never"
+                ns.Meter_Update()
+                assert.is_false(ns.Enemies_IsActive())
+            end)
+
+            it("a role change in the middle of a fight takes effect when it ends", function()
+                playerIs("TANK")
+                StartAddon(ns, nil, { locked = true })
+                enterCombat()
+                WowMock.units.player.role = "DAMAGER"
+                assert.has_no.errors(function() ns.Meter_Update() end)
+                assert.is_true(ns.Enemies_IsActive())
+                WowMock.inCombat = false
+                FireEvent("PLAYER_REGEN_ENABLED")
+                ns.Meter_Update()
+                assert.is_false(ns.Enemies_IsActive())
+            end)
         end)
 
         it("the close button turns it off for good", function()
             start({})
             ns.Prefs_Toggle()
             frame.close:Click()
-            assert.is_false(ns.char.enemyList)
+            assert.are.equal("never", ns.char.enemyListMode)
             assert.is_false(frame:IsShown())
         end)
 
@@ -298,7 +361,7 @@ describe("Enemies", function()
         end)
 
         it("with the list off, every button is hidden", function()
-            start({ locked = true, enemyList = false })
+            start({ locked = true, enemyListMode = "never" })
             for _, button in ipairs(buttons()) do
                 assert.are.equal("hide", WowMock.drivers[button].visibility)
             end
@@ -354,7 +417,7 @@ describe("Enemies", function()
                 ns.Meter_Update()
                 ns.char.scale = 1.3
                 ns.char.enemyRows = 8
-                ns.char.enemyList = false
+                ns.char.enemyListMode = "never"
                 ns.Meter_ApplySettings()
                 FireEvent("PLAYER_TARGET_CHANGED")
             end)
@@ -386,6 +449,34 @@ describe("Enemies", function()
             FireEvent("PLAYER_REGEN_ENABLED")
             ns.Meter_Update()
             assert.is_not_nil(_G.AggreaoEnemyButton1)
+        end)
+
+        it("with a pet a click also sends it at that mob; without one it only targets", function()
+            WowMock.AddUnit("pet", "Porky", "HUNTER", "NONE", { pet = true })
+            start({ locked = true, enemyRows = 3 })
+            mob("nameplate5", "Wolf", WowMock.units.player)
+            ns.Meter_Update()
+            local b = buttons()[1]
+            assert.are.equal("macro", b:GetAttribute("type1"))
+            assert.are.equal("/target [@nameplate5]\n/petattack [@nameplate5]", b:GetAttribute("macrotext1"))
+            WowMock.units.pet = nil -- the pet is dismissed
+            ns.Meter_Update()
+            assert.are.equal("target", b:GetAttribute("type1"))
+            assert.is_nil(b:GetAttribute("macrotext1"))
+        end)
+
+        it("a pet called in the middle of a fight changes nothing until it ends", function()
+            start({ locked = true, enemyRows = 3 })
+            mob("nameplate1", "Wolf", WowMock.units.player)
+            ns.Meter_Update()
+            enterCombat()
+            WowMock.AddUnit("pet", "Porky", "HUNTER", "NONE", { pet = true })
+            assert.has_no.errors(function() ns.Meter_Update() end)
+            assert.are.equal("target", buttons()[1]:GetAttribute("type1"))
+            WowMock.inCombat = false
+            FireEvent("PLAYER_REGEN_ENABLED")
+            ns.Meter_Update()
+            assert.are.equal("macro", buttons()[1]:GetAttribute("type1"))
         end)
 
         it("the tooltip names the mob and says what a click does", function()

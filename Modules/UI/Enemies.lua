@@ -40,6 +40,7 @@ local driven = {}   -- row -> what its state driver was last given, so it is not
 local active = false     -- whether the list is on (changed only outside combat, with the buttons)
 local activeRows = 0     -- how many rows are on (idem)
 local layoutKey          -- where and how big the window and the buttons were last put
+local petMode            -- whether the buttons were last set for a player with a pet
 local mouseEnabled
 
 local function rowTop(i) return TOP + (i - 1) * ROW_H end
@@ -51,6 +52,35 @@ local function myRole()
     local classFile = ns.Plain(select(2, UnitClass("player")))
     return ns.Threat_Role("player", classFile)
 end
+
+-- Whether the list is wanted: always, never, or (the default) when you are a tank -- or the game doesn't say
+-- what you are (older clients): better a list too many than none for a tank.
+local function wanted()
+    local mode = ns.char.enemyListMode
+    if mode == "always" then return true end
+    if mode == "never" then return false end
+    local role = myRole()
+    return role == nil or role == "TANK"
+end
+
+-- The choices of the preference, in order.
+function ns.Enemies_Modes()
+    return {
+        { key = "tank", name = L["Only as tank"] },
+        { key = "always", name = L["Always"] },
+        { key = "never", name = L["Never"] },
+    }
+end
+
+function ns.Enemies_ModeName(key)
+    for _, mode in ipairs(ns.Enemies_Modes()) do
+        if mode.key == key then return mode.name end
+    end
+    return key
+end
+
+-- Whether the list is on right now (it changes only outside combat, with the buttons).
+function ns.Enemies_IsActive() return active end
 
 -- Color of the strip: your hold on the mob.
 local function holdColor(entry, role)
@@ -131,7 +161,8 @@ local function createButton(i)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         local unit = self:GetAttribute("unit")
         if unit and not pcall(GameTooltip.SetUnit, GameTooltip, unit) then GameTooltip:SetText("Aggreao!!") end
-        GameTooltip:AddLine(L["Click: target this enemy"], 0.7, 0.7, 0.7)
+        GameTooltip:AddLine(self:GetAttribute("type1") == "macro" and L["Click: target this enemy and send your pet"]
+            or L["Click: target this enemy"], 0.7, 0.7, 0.7)
         GameTooltip:Show()
     end)
     button:SetScript("OnLeave", GameTooltip_Hide)
@@ -196,14 +227,25 @@ local function settle()
         end
     end
     local tokens = active and pickTokens(count) or {}
+    -- with a pet, a click also sends it at that mob (a hunter's pet then takes the one that is running at them)
+    local pet = yes(UnitExists("pet"))
     for i = 1, MAX_ROWS do
         local token = tokens[i]
-        if token ~= bound[i] then
+        if token ~= bound[i] or pet ~= petMode then
             bound[i] = token
-            if token then buttons[i]:SetAttribute("unit", token) end
+            local button = buttons[i]
+            if token then button:SetAttribute("unit", token) end
+            if pet and token then
+                button:SetAttribute("type1", "macro")
+                button:SetAttribute("macrotext1", ("/target [@%s]\n/petattack [@%s]"):format(token, token))
+            else
+                button:SetAttribute("type1", "target")
+                button:SetAttribute("macrotext1", nil)
+            end
         end
         setDriver(i, token and ("[@%s,harm,nodead,combat] show; hide"):format(token) or "hide")
     end
+    petMode = pet
 end
 
 function ns.Enemies_ApplySettings()
@@ -253,7 +295,7 @@ local function create()
     close:SetSize(TITLE_H + 6, TITLE_H + 6)
     close:SetPoint("TOPRIGHT", 3, 3)
     close:SetScript("OnClick", function() -- closes the list for good (the preferences bring it back)
-        ns.char.enemyList = false
+        ns.char.enemyListMode = "never"
         ns.Enemies_Update()
         if ns.Prefs_Refresh then ns.Prefs_Refresh() end
         ns.Print(L["Enemy list closed. Show it again in the preferences."])
@@ -314,7 +356,7 @@ function ns.Enemies_Update()
         for i = 1, MAX_ROWS do
             buttons[i] = buttons[i] or createButton(i)
         end
-        active = ns.char.enemyList and true or false
+        active = wanted()
         activeRows = active and ns.char.enemyRows or 0
         settle()
     end

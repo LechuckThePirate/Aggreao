@@ -137,8 +137,19 @@ local function create()
     widgets[#widgets + 1] = makeCheck(prefs, -132, L["Show role icons (tank, healer, dps)"], get("showRoles"), set("showRoles"))
     widgets[#widgets + 1] = makeCheck(prefs, -160, L["Include pets"], get("pets"), set("pets"))
     widgets[#widgets + 1] = makeCheck(prefs, -188, L["Hide when not in combat"], get("hideOutOfCombat"), set("hideOutOfCombat"))
-    widgets[#widgets + 1] = makeCheck(prefs, -216, L["Show the enemy list (click an enemy to target it)"],
-        get("enemyList"), set("enemyList"))
+    local enemyButton = makeButton(prefs, -216, "", function(self)
+        local options = {}
+        for _, mode in ipairs(ns.Enemies_Modes()) do options[#options + 1] = { name = mode.name, key = mode.key } end
+        ns.PopupMenu(self, options, function(opt)
+            ns.char.enemyListMode = opt.key
+            ns.Meter_Update()
+            refreshAll()
+        end, 292)
+    end)
+    enemyButton.Refresh = function()
+        enemyButton:SetText(L["Enemy list (click to target): %s"]:format(ns.Enemies_ModeName(ns.char.enemyListMode)))
+    end
+    widgets[#widgets + 1] = enemyButton
     widgets[#widgets + 1] = makeCheck(prefs, -244, L["Show other mobs in combat (if the enemy list is off)"],
         get("otherMobs"), set("otherMobs"))
     -- the section needs the enemy nameplates (the game only lets addons reach the mobs through them): say so,

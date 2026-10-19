@@ -28,10 +28,10 @@ describe("Preferences", function()
     end)
 
     it("the checkboxes reflect and change the settings", function()
-        -- order: per character, show window, lock, role icons, pets, hide out of combat, enemy list, other mobs,
-        -- sound, red border, minimap, chat messages
+        -- order: per character, show window, lock, role icons, pets, hide out of combat, other mobs, sound,
+        -- red border, minimap, chat messages
         local list = checks()
-        assert.are.equal(12, #list)
+        assert.are.equal(11, #list)
         assert.is_true(list[1]:GetChecked())  -- per character
         assert.is_true(list[2]:GetChecked())  -- window shown (default)
         assert.is_true(list[3]:GetChecked())  -- locked (the test login)
@@ -48,19 +48,16 @@ describe("Preferences", function()
         assert.is_true(_G.AggreaoMeterFrame:IsShown()) -- the preferences are open: it stays, to be placed
         prefs:Hide()
         assert.is_false(_G.AggreaoMeterFrame:IsShown()) -- closed, out of combat: hidden
-        assert.is_true(list[7]:GetChecked()) -- enemy list: on by default
+        assert.is_true(list[7]:GetChecked()) -- other mobs: on by default
         list[7]:SetChecked(false); list[7]:Click()
-        assert.is_false(ns.char.enemyList)
-        assert.is_true(list[8]:GetChecked()) -- other mobs: on by default
-        list[8]:SetChecked(false); list[8]:Click()
         assert.is_false(ns.char.otherMobs)
-        list[9]:SetChecked(false); list[9]:Click()
+        list[8]:SetChecked(false); list[8]:Click()
         assert.is_false(ns.char.alertSound)
-        list[10]:SetChecked(false); list[10]:Click()
+        list[9]:SetChecked(false); list[9]:Click()
         assert.is_false(ns.char.alertFlash)
-        list[12]:SetChecked(false); list[12]:Click()
-        assert.is_true(ns.char.quiet)
         list[11]:SetChecked(false); list[11]:Click()
+        assert.is_true(ns.char.quiet)
+        list[10]:SetChecked(false); list[10]:Click()
         assert.is_true(ns.char.minimap.hide)
     end)
 
@@ -115,6 +112,18 @@ describe("Preferences", function()
         assert.are.equal("alarm", ns.char.alertSoundKey)
         assert.are.equal(12867, WowMock.sounds[#WowMock.sounds][1])
         assert.is_not_nil(WowMock.FindButton("Sound: Alarm clock"))
+    end)
+
+    it("the enemy list button shows the mode, offers all three and applies the picked one", function()
+        local button = WowMock.FindButton("Enemy list (click to target): Only as tank")
+        assert.is_not_nil(button)
+        button:Click()
+        local options = WowMock.FindAll(function(f) return f.text and f._scripts.OnClick and f._shown and f._parent and f._parent.buttons end)
+        assert.are.equal(3, #options)
+        options[2]:Click()
+        assert.are.equal("always", ns.char.enemyListMode)
+        assert.is_not_nil(WowMock.FindButton("Enemy list (click to target): Always"))
+        assert.is_true(ns.Enemies_IsActive())
     end)
 
     it("the test button plays the chosen sound", function()
