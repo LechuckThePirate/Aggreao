@@ -65,6 +65,13 @@ SlashCmdList.AGGREAO = function(msg)
     elseif msg == "reset" then
         ns.Meter_ResetPosition()
         ns.Print(ns.L["Window position reset."])
+    elseif msg == "enemies" then
+        ns.Enemies_Debug()
+    elseif msg == "where" then
+        ns.Enemies_Where()
+    elseif msg == "debug" then
+        ns.debugClicks = not ns.debugClicks
+        ns.Print("click messages " .. (ns.debugClicks and "on" or "off"))
     elseif msg == "changelog" or msg == "whatsnew" then
         ns.Welcome_Show()
     else

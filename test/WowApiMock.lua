@@ -148,6 +148,7 @@ function frameMethods:GetHighlightTexture() self._highlight = self._highlight or
 function frameMethods:GetThumbTexture() self._thumb = self._thumb or WowMock.NewFrame("Texture", nil, self); return self._thumb end
 function frameMethods:Click(...) fire(self, "OnClick", ...) end
 function frameMethods:GetObjectType() return self._kind end
+function frameMethods:GetName() return self._name end
 
 local function methodFor(self, k)
     if frameMethods[k] then return frameMethods[k] end

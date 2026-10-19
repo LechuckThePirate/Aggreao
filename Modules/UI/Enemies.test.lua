@@ -200,6 +200,28 @@ describe("Enemies", function()
             assert.are.same({ "Interface\\Buttons\\LockButton-Locked-Up" }, frame.lock._set.SetNormalTexture)
         end)
 
+        it("/aggreao enemies reports each button, /aggreao debug reports each click, /aggreao where the frame under the mouse", function()
+            start({ locked = true, enemyRows = 3 })
+            mob("nameplate1", "Wolf", WowMock.units.player)
+            ns.Meter_Update()
+            enterCombat()
+            WowMock.printed = {}
+            SlashCmdList.AGGREAO("enemies")
+            local report = table.concat(WowMock.printed, "\n")
+            assert.matches("enemy list: active=true rows=3", report)
+            assert.matches("1: unit=nameplate1 type1=target", report)
+            assert.matches("window: shown=true", report)
+            SlashCmdList.AGGREAO("debug")
+            WowMock.printed = {}
+            buttons()[1]._hooks.PreClick[1](buttons()[1], "LeftButton")
+            assert.matches("click LeftButton on AggreaoEnemyButton1: type1=target unit=nameplate1", WowMock.printed[1])
+            WowMock.printed = {}
+            _G.GetMouseFoci = function() return { frame } end
+            SlashCmdList.AGGREAO("where")
+            _G.GetMouseFoci = nil
+            assert.matches("under the mouse: AggreaoEnemiesFrame", WowMock.printed[#WowMock.printed])
+        end)
+
         it("in combat the padlock works, and the close button turns it off when the combat ends", function()
             start({})
             enterCombat()

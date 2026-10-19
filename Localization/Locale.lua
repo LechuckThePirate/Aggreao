@@ -60,7 +60,8 @@ local es = {
         "Lista de enemigos cerrada. Vuelve a mostrarla en las preferencias.",
     ["The enemy list closes when the combat ends. Show it again in the preferences."] =
         "La lista de enemigos se cierra al acabar el combate. Vuelve a mostrarla en las preferencias.",
-    ["The enemy list can't be moved in combat."] = "La lista de enemigos no se puede mover en combate.",
+    ["The enemy list can't be moved in combat. Open the preferences out of combat to place it."] =
+        "La lista de enemigos no se puede mover en combate. Abre las preferencias fuera de combate para colocarla.",
     ["YOU"] = "TÚ",
     ["Needs the enemy nameplates on (V key)."] = "Necesita las placas de enemigos activadas (tecla V).",
     ["Needs the enemy nameplates on (V key). They are off now."] =

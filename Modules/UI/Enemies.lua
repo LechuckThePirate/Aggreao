@@ -166,6 +166,12 @@ local function createButton(i)
         GameTooltip:Show()
     end)
     button:SetScript("OnLeave", GameTooltip_Hide)
+    button:HookScript("PreClick", function(self, mouseButton)
+        if ns.debugClicks then
+            ns.Print(("click %s on %s: type1=%s unit=%s"):format(tostring(mouseButton), self:GetName() or "?",
+                tostring(self:GetAttribute("type1")), tostring(self:GetAttribute("unit"))))
+        end
+    end)
     return button
 end
 
@@ -249,6 +255,40 @@ local function settle()
     petMode = pet
 end
 
+-- For when a click does nothing (/aggreao enemies): what each button is bound to and whether it is there.
+function ns.Enemies_Debug()
+    ns.Print(("enemy list: active=%s rows=%s lockdown=%s pet=%s mode=%s"):format(tostring(active), tostring(activeRows),
+        tostring(InCombatLockdown()), tostring(petMode), tostring(ns.char.enemyListMode)))
+    for i = 1, activeRows do
+        local b = buttons[i]
+        if b then
+            ns.Print(("%d: unit=%s type1=%s shown=%s visible=%s mouse=%s size=%sx%s left=%s top=%s scale=%s driver=%s"):format(
+                i, tostring(b:GetAttribute("unit")), tostring(b:GetAttribute("type1")), tostring(b:IsShown()),
+                tostring(b:IsVisible()), tostring(b:IsMouseEnabled()), tostring(b:GetWidth()), tostring(b:GetHeight()),
+                tostring(b:GetLeft()), tostring(b:GetTop()), tostring(b:GetScale()), tostring(driven[i])))
+        end
+    end
+    if frame then
+        ns.Print(("window: shown=%s mouse=%s left=%s top=%s scale=%s strata=%s"):format(tostring(frame:IsShown()),
+            tostring(frame:IsMouseEnabled()), tostring(frame:GetLeft()), tostring(frame:GetTop()),
+            tostring(frame:GetScale()), tostring(frame:GetFrameStrata())))
+    end
+end
+
+-- /aggreao where: in 3 seconds, the frame under the mouse (point at the window or a row meanwhile).
+function ns.Enemies_Where()
+    ns.Print("pointing at what? 3 seconds...")
+    C_Timer.After(3, function()
+        local focus = GetMouseFoci and GetMouseFoci() or { GetMouseFocus and GetMouseFocus() or nil }
+        if #focus == 0 then ns.Print("nothing under the mouse") end
+        for _, f in ipairs(focus) do
+            local parent = f.GetParent and f:GetParent()
+            ns.Print(("under the mouse: %s (%s), parent %s"):format(tostring(f.GetName and f:GetName()),
+                tostring(f.GetObjectType and f:GetObjectType()), tostring(parent and parent.GetName and parent:GetName())))
+        end
+    end)
+end
+
 function ns.Enemies_ApplySettings()
     if frame then ns.Enemies_Update() end
 end
@@ -273,7 +313,7 @@ local function create()
     frame:SetScript("OnDragStart", function(self)
         if ns.char.locked then return end
         if InCombatLockdown() then
-            ns.Print(L["The enemy list can't be moved in combat."])
+            ns.Print(L["The enemy list can't be moved in combat. Open the preferences out of combat to place it."])
             return
         end
         self:StartMoving()
