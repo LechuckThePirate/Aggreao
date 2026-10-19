@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- New: the enemy list, a window with every mob that is fighting you: its name, its health, whom it is attacking and
+  your own threat on it, and a strip that shows at a glance whether you hold it (as a tank: green = yours, red = loose
+  or on a healer or dps). Click a row to target that mob. It appears in combat; turn it off or choose how many enemies
+  it lists in the preferences. The game does not allow changing what a click targets once combat starts, so the rows
+  are bound to the mobs around you before the pull and keep their order during the fight. With the enemy list on,
+  the aggro window no longer shows its "Other mobs" section.
+
 ## 1.2.2
 
 - Fix: the welcome windows of several addons no longer show their text, buttons and links through each other when they open together: each one opens in front, with all its content, and a click brings it forward.

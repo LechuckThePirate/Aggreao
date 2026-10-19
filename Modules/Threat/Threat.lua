@@ -170,11 +170,66 @@ end
 local MOB_TOKENS = { "focus", "boss1", "boss2", "boss3", "boss4", "boss5" }
 for i = 1, 40 do MOB_TOKENS[#MOB_TOKENS + 1] = "nameplate" .. i end
 
+-- The tokens a mob can be reached through, in the order they are tried (see MOB_TOKENS above).
+function ns.Threat_MobTokens() return MOB_TOKENS end
+
+-- A hostile unit that is alive and fighting: the ones the lists are about.
+function ns.Threat_IsEnemyInCombat(unit)
+    return yes(UnitExists(unit)) and yes(UnitCanAttack("player", unit)) and not yes(UnitIsDead(unit))
+        and yes(UnitAffectingCombat(unit))
+end
+
+-- Health of a unit: current and maximum as the game gives them (they can be hidden, "secret", in combat: then they
+-- are only good to hand to a status bar), and its percentage when it can be worked out (nil if it is hidden).
+local function healthOf(unit)
+    local cur = UnitHealth and UnitHealth(unit)
+    local max = UnitHealthMax and UnitHealthMax(unit)
+    local pct
+    if readable(cur) and readable(max) then
+        if max > 0 then pct = cur / max * 100 end
+    elseif UnitHealthPercent and CurveConstants and CurveConstants.ScaleTo100 then
+        local value = UnitHealthPercent(unit, true, CurveConstants.ScaleTo100)
+        if readable(value) then pct = value end
+    end
+    return cur, max, pct
+end
+
+-- One mob: its name, whom it attacks (the class, role and name of that one can be hidden too), your own threat on it
+-- and its health. `unit` is kept so the window can read it again.
+local function mobEntry(unit)
+    local name = UnitName(unit)
+    if type(name) ~= "string" then name = "?" end
+    local entry = { unit = unit, mob = name, sortName = plain(name) or "", isMe = false, isPet = false }
+    entry.health, entry.healthMax, entry.healthPct = healthOf(unit)
+    local target = unit .. "target"
+    if yes(UnitExists(target)) then
+        local who = UnitName(target)
+        if type(who) == "string" then
+            entry.who = who
+            entry.whoSecret = (plain(who) == nil)
+        end
+        entry.isMe = yes(UnitIsUnit(target, "player"))
+        local isPlayer = yes(UnitIsPlayer(target))
+        entry.isPet = (not isPlayer) and yes(UnitPlayerControlled(target))
+        if isPlayer then
+            entry.class = plain(select(2, UnitClass(target)))
+            entry.role = ns.Threat_Role(target, entry.class) -- TANK marks the one holding the mob
+        end
+    end
+    if entry.isMe then
+        entry.pct = 100
+    elseif UnitDetailedThreatSituation then
+        local _, _, scaled = UnitDetailedThreatSituation("player", unit)
+        if readable(scaled) then entry.pct = scaled end
+    end
+    return entry
+end
+ns.Threat_Mob = mobEntry
+
 function ns.Threat_Mobs(max, skipTarget)
     local list, accepted = {}, {}
     for _, unit in ipairs(MOB_TOKENS) do
-        if yes(UnitExists(unit)) and yes(UnitCanAttack("player", unit)) and not yes(UnitIsDead(unit))
-            and yes(UnitAffectingCombat(unit)) and not (skipTarget and yes(UnitIsUnit(unit, "target"))) then
+        if ns.Threat_IsEnemyInCombat(unit) and not (skipTarget and yes(UnitIsUnit(unit, "target"))) then
             -- the same mob can be a nameplate and also the focus: counted once
             local duplicate = false
             for _, other in ipairs(accepted) do
@@ -182,31 +237,7 @@ function ns.Threat_Mobs(max, skipTarget)
             end
             if not duplicate then
                 accepted[#accepted + 1] = unit
-                local name = UnitName(unit)
-                if type(name) ~= "string" then name = "?" end
-                local entry = { mob = name, sortName = plain(name) or "", isMe = false, isPet = false }
-                local target = unit .. "target"
-                if yes(UnitExists(target)) then
-                    local who = UnitName(target)
-                    if type(who) == "string" then
-                        entry.who = who
-                        entry.whoSecret = (plain(who) == nil)
-                    end
-                    entry.isMe = yes(UnitIsUnit(target, "player"))
-                    local isPlayer = yes(UnitIsPlayer(target))
-                    entry.isPet = (not isPlayer) and yes(UnitPlayerControlled(target))
-                    if isPlayer then
-                        entry.class = plain(select(2, UnitClass(target)))
-                        entry.role = ns.Threat_Role(target, entry.class) -- TANK marks the one holding the mob
-                    end
-                end
-                if entry.isMe then
-                    entry.pct = 100
-                elseif UnitDetailedThreatSituation then
-                    local _, _, scaled = UnitDetailedThreatSituation("player", unit)
-                    if readable(scaled) then entry.pct = scaled end
-                end
-                list[#list + 1] = entry
+                list[#list + 1] = mobEntry(unit)
             end
         end
     end

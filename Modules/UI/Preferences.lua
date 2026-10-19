@@ -3,7 +3,7 @@ local L = ns.L
 
 -- Preferences window (opened with the minimap button, right-click on the aggro window or /aggreao prefs).
 -- Settings, in ns.char: per character or shared by the account, depending on the first checkbox.
-local WIDTH, HEIGHT = 340, 734
+local WIDTH, HEIGHT = 340, 814
 local LABEL_W = WIDTH - 48 - 16 -- a checkbox's text: from after the box (x = 48) to the window's right margin
 local prefs, refreshPrefs
 
@@ -137,11 +137,14 @@ local function create()
     widgets[#widgets + 1] = makeCheck(prefs, -132, L["Show role icons (tank, healer, dps)"], get("showRoles"), set("showRoles"))
     widgets[#widgets + 1] = makeCheck(prefs, -160, L["Include pets"], get("pets"), set("pets"))
     widgets[#widgets + 1] = makeCheck(prefs, -188, L["Hide when not in combat"], get("hideOutOfCombat"), set("hideOutOfCombat"))
-    widgets[#widgets + 1] = makeCheck(prefs, -216, L["Show other mobs in combat"], get("otherMobs"), set("otherMobs"))
+    widgets[#widgets + 1] = makeCheck(prefs, -216, L["Show the enemy list (click an enemy to target it)"],
+        get("enemyList"), set("enemyList"))
+    widgets[#widgets + 1] = makeCheck(prefs, -244, L["Show other mobs in combat (if the enemy list is off)"],
+        get("otherMobs"), set("otherMobs"))
     -- the section needs the enemy nameplates (the game only lets addons reach the mobs through them): say so,
     -- and in orange if they are off right now
     local nameplateNote = prefs:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-    nameplateNote:SetPoint("TOPLEFT", 48, -241)
+    nameplateNote:SetPoint("TOPLEFT", 48, -269)
     nameplateNote:SetWidth(LABEL_W)
     nameplateNote:SetJustifyH("LEFT")
     function nameplateNote.Refresh()
@@ -154,22 +157,24 @@ local function create()
         end
     end
     widgets[#widgets + 1] = nameplateNote
-    widgets[#widgets + 1] = makeSlider(prefs, -264, 3, 10, 1, get("rows"), set("rows"),
+    widgets[#widgets + 1] = makeSlider(prefs, -292, 3, 10, 1, get("rows"), set("rows"),
         function(value) return L["Players listed: %d"]:format(value) end)
-    widgets[#widgets + 1] = makeSlider(prefs, -316, 0.5, 1.5, 0.05, get("scale"), applied("scale"),
+    widgets[#widgets + 1] = makeSlider(prefs, -344, 3, 10, 1, get("enemyRows"), set("enemyRows"),
+        function(value) return L["Enemies listed: %d"]:format(value) end)
+    widgets[#widgets + 1] = makeSlider(prefs, -396, 0.5, 1.5, 0.05, get("scale"), applied("scale"),
         function(value) return L["Scale: %d%%"]:format(percent(value)) end)
-    widgets[#widgets + 1] = makeSlider(prefs, -368, 0, 1, 0.05, get("opacity"), applied("opacity"),
+    widgets[#widgets + 1] = makeSlider(prefs, -448, 0, 1, 0.05, get("opacity"), applied("opacity"),
         function(value) return L["Background opacity: %d%%"]:format(percent(value)) end)
 
     -- the alert
-    widgets[#widgets + 1] = makeCheck(prefs, -420, L["Play a sound when you are close to taking the aggro"],
+    widgets[#widgets + 1] = makeCheck(prefs, -500, L["Play a sound when you are close to taking the aggro"],
         get("alertSound"), set("alertSound"))
-    widgets[#widgets + 1] = makeCheck(prefs, -464, L["Red border when you are close to taking the aggro"],
+    widgets[#widgets + 1] = makeCheck(prefs, -544, L["Red border when you are close to taking the aggro"],
         get("alertFlash"), set("alertFlash"))
-    widgets[#widgets + 1] = makeSlider(prefs, -508, 50, 100, 5, get("alertThreshold"), set("alertThreshold"),
+    widgets[#widgets + 1] = makeSlider(prefs, -588, 50, 100, 5, get("alertThreshold"), set("alertThreshold"),
         function(value) return L["Alert from %d%% of the aggro"]:format(value) end)
 
-    local soundButton = makeButton(prefs, -560, "", function(self)
+    local soundButton = makeButton(prefs, -640, "", function(self)
         local options = {}
         for _, s in ipairs(ns.ALERT_SOUNDS) do options[#options + 1] = { name = s.name, key = s.key } end
         ns.PopupMenu(self, options, function(opt)
@@ -182,21 +187,21 @@ local function create()
         soundButton:SetText(L["Sound: %s"]:format(ns.Alert_SoundName(ns.char.alertSoundKey)))
     end
     widgets[#widgets + 1] = soundButton
-    makeButton(prefs, -588, L["Test the sound"], function() ns.Alert_Play() end)
+    makeButton(prefs, -668, L["Test the sound"], function() ns.Alert_Play() end)
 
     -- the rest
-    widgets[#widgets + 1] = makeCheck(prefs, -620, L["Show the minimap button"],
+    widgets[#widgets + 1] = makeCheck(prefs, -700, L["Show the minimap button"],
         function() return ns.Minimap_IsShown() end,
         function(value) ns.Minimap_SetShown(value) end)
-    widgets[#widgets + 1] = makeCheck(prefs, -648, L["Show chat messages at startup"],
+    widgets[#widgets + 1] = makeCheck(prefs, -728, L["Show chat messages at startup"],
         function() return not ns.char.quiet end,
         function(value) ns.char.quiet = (not value) or nil end)
 
-    local resetButton = makeButton(prefs, -676, L["Reset window position"], function() ns.Meter_ResetPosition() end)
+    local resetButton = makeButton(prefs, -756, L["Reset window position"], function() ns.Meter_ResetPosition() end)
     resetButton:SetWidth(142)
-    local newButton = makeButton(prefs, -676, L["What's new"], function() ns.Welcome_Show() end)
+    local newButton = makeButton(prefs, -756, L["What's new"], function() ns.Welcome_Show() end)
     newButton:SetWidth(142)
-    newButton:SetPoint("TOPLEFT", 174, -676)
+    newButton:SetPoint("TOPLEFT", 174, -756)
 
     -- the aggro window stays visible while this one is open, even when it hides out of combat
     prefs:SetScript("OnShow", function()

@@ -181,13 +181,65 @@ local function methodFor(self, k)
     return function() end
 end
 
+-- Protected frames (secure templates): in combat lockdown they can't be shown, hidden, moved, resized or have their
+-- attributes changed, and neither can the frames they hang from (their parents and the frames they are anchored to),
+-- as in the game. The calls raise the error the game reports, so a test notices an addon doing it.
+local PROTECTED_CALLS = { "Show", "Hide", "SetPoint", "ClearAllPoints", "SetSize", "SetWidth", "SetHeight", "SetScale",
+    "EnableMouse", "SetAttribute" }
+for _, call in ipairs(PROTECTED_CALLS) do
+    local original = frameMethods[call]
+    frameMethods[call] = function(self, ...)
+        if WowMock.inCombat and (self._protected or self._restricted) then
+            error(("ADDON_ACTION_BLOCKED: %s() on a protected frame in combat"):format(call), 2)
+        end
+        if original then return original(self, ...) end
+        self._set[call] = { ... }
+    end
+end
+function frameMethods:GetAttribute(key) return self._attrs and self._attrs[key] end
+local setAttribute = frameMethods.SetAttribute
+function frameMethods:SetAttribute(key, value)
+    setAttribute(self, key, value)
+    self._attrs = self._attrs or {}
+    self._attrs[key] = value
+end
+
+-- a frame that depends on a protected one is restricted too: its parents and the frames it is anchored to
+local function restrict(frame)
+    while frame and frame ~= UIParent do
+        frame._restricted = true
+        frame = frame._parent
+    end
+end
+
 function WowMock.NewFrame(kind, name, parent, template)
     local f = { _kind = kind, _name = name, _parent = parent, _template = template, _scripts = {}, _hooks = {},
         _set = {}, _shown = true }
+    f._protected = type(template) == "string" and template:find("Secure", 1, true) ~= nil
     setmetatable(f, { __index = function(t, k) return methodFor(t, k) end })
     table.insert(WowMock.frames, f)
     if name then _G[name] = f end
+    if f._protected then restrict(parent) end
     return f
+end
+
+-- an anchor to another frame makes that frame restricted too, if the anchored one is protected
+local setPoint = frameMethods.SetPoint
+function frameMethods:SetPoint(point, relativeTo, ...)
+    setPoint(self, point, relativeTo, ...)
+    if self._protected and type(relativeTo) == "table" then restrict(relativeTo) end
+end
+
+-- the state drivers a protected frame was given: WowMock.drivers[frame][state] = macro conditions
+WowMock.drivers = setmetatable({}, { __mode = "k" })
+RegisterStateDriver = function(frame, state, conditions)
+    if WowMock.inCombat and frame._protected then error("ADDON_ACTION_BLOCKED: RegisterStateDriver() in combat", 2) end
+    WowMock.drivers[frame] = WowMock.drivers[frame] or {}
+    WowMock.drivers[frame][state] = conditions
+end
+UnregisterStateDriver = function(frame, state)
+    if WowMock.inCombat and frame._protected then error("ADDON_ACTION_BLOCKED: UnregisterStateDriver() in combat", 2) end
+    if WowMock.drivers[frame] then WowMock.drivers[frame][state] = nil end
 end
 
 CreateFrame = function(kind, name, parent, template)
@@ -304,6 +356,8 @@ end
 UnitGUID = function(token) local u = unitOf(token); return u and (u.guid or token) end
 UnitIsPlayer = function(token) local u = unitOf(token); return u ~= nil and u.npc ~= true and u.pet ~= true end
 UnitPlayerControlled = function(token) local u = unitOf(token); return u ~= nil and u.npc ~= true end
+UnitHealth = function(token) local u = unitOf(token); return u and u.health or 0 end
+UnitHealthMax = function(token) local u = unitOf(token); return u and u.healthMax or 0 end
 InCombatLockdown = function() return WowMock.inCombat or false end
 GetCursorPosition = function() return WowMock.cursor[1], WowMock.cursor[2] end
 IsShiftKeyDown = function() return WowMock.shift or false end

@@ -23,8 +23,10 @@ Addon files at the repo root, packaged as the folder `Aggreao` (`.pkgmeta`):
 - `Aggreao.toc` (load order), `Aggreao.lua` (entry point: events and `/aggreao`, `/agg`; loaded last)
 - `Localization/Locale.lua` — English text is the key, with the Spanish (esES/esMX) table; more locales can be added as files
 - `Modules/{Settings,Threat,Alert,UI}/` — every `X.lua` has `X.test.lua` next to it
-  (Threat = who has the aggro and the fallbacks per client, Alert = the "about to pull" sound/border, UI = meter, layout, menu,
-  minimap button, preferences, welcome/changelog window)
+  (Threat = who has the aggro and the fallbacks per client, Alert = the "about to pull" sound/border, UI = meter, enemy list,
+  layout, menu, minimap button, preferences, welcome/changelog window). `Enemies.lua` is the enemy list with click-to-target:
+  read the comment at its top before touching it, it is built around the combat lockdown of secure buttons (the mock in
+  `test/WowApiMock.lua` raises ADDON_ACTION_BLOCKED for protected frames in combat, so the tests catch violations)
 - `test/` (WoW API mock + local runner), `setupTests.lua`, `Icons/`, `images/screencaps/` (CurseForge description images)
 
 How well it works depends on what each client tells addons about threat: where `UnitDetailedThreatSituation` is available it

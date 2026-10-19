@@ -225,7 +225,7 @@ describe("Meter", function()
         end
 
         it("on by default: the section shows in combat", function()
-            start()
+            start({ enemyList = false })
             WowMock.inCombat = true
             target()
             otherMob("nameplate1", "Wolf", "G1", WowMock.units.party1)
@@ -234,7 +234,7 @@ describe("Meter", function()
         end)
 
         it("off: no section even in combat", function()
-            start({ otherMobs = false })
+            start({ enemyList = false, otherMobs = false })
             WowMock.inCombat = true
             target()
             otherMob("nameplate1", "Wolf", "G1", WowMock.units.party1)
@@ -243,7 +243,7 @@ describe("Meter", function()
         end)
 
         it("on: one line per other mob under the list, with its name and whom it attacks", function()
-            start({ locked = true, otherMobs = true })
+            start({ enemyList = false, locked = true, otherMobs = true })
             WowMock.inCombat = true
             target()
             otherMob("nameplate1", "Wolf", "G1", WowMock.units.party1)
@@ -259,7 +259,7 @@ describe("Meter", function()
         end)
 
         it("a tank gets the shield next to the name, a pet the paw, and nobody else an icon", function()
-            start({ locked = true, otherMobs = true })
+            start({ enemyList = false, locked = true, otherMobs = true })
             WowMock.inCombat = true
             WowMock.AddUnit("pet", "Porky", "HUNTER", "NONE", { pet = true })
             otherMob("nameplate1", "Wolf", "G1", WowMock.units.party1) -- the tank
@@ -278,7 +278,7 @@ describe("Meter", function()
             WowMock.group = nil
             WowMock.AddUnit("player", "Me", "HUNTER", "NONE")
             WowMock.AddUnit("pet", "Porky", "HUNTER", "NONE", { pet = true })
-            StartAddon(ns, nil, { locked = true, otherMobs = true })
+            StartAddon(ns, nil, { locked = true, otherMobs = true, enemyList = false })
             frame = _G.AggreaoMeterFrame
             WowMock.inCombat = true
             otherMob("nameplate1", "Wolf", "G1", WowMock.units.pet)
@@ -287,7 +287,7 @@ describe("Meter", function()
         end)
 
         it("with the role icons off, no icons in the section either", function()
-            start({ locked = true, otherMobs = true, showRoles = false })
+            start({ enemyList = false, locked = true, otherMobs = true, showRoles = false })
             WowMock.inCombat = true
             WowMock.AddUnit("pet", "Porky", "HUNTER", "NONE", { pet = true })
             otherMob("nameplate1", "Wolf", "G1", WowMock.units.party1)
@@ -299,7 +299,7 @@ describe("Meter", function()
         it("an attacker whose name is hidden (Forever, Retail) is shown as it is: no color, icon or text added", function()
             local SECRET = "\0secret"
             _G.issecretvalue = function(v) return v == SECRET end
-            start({ locked = true, otherMobs = true })
+            start({ enemyList = false, locked = true, otherMobs = true })
             WowMock.inCombat = true
             WowMock.AddUnit("party3", SECRET, SECRET, SECRET)
             WowMock.threat["player@nameplate1"] = { false, 1, 64, 50, 500 }
@@ -315,7 +315,7 @@ describe("Meter", function()
         it("a line that showed a hidden name and then a plain one measures its text without error", function()
             local SECRET = "\0secret"
             _G.issecretvalue = function(v) return v == SECRET end
-            start({ locked = true, otherMobs = true })
+            start({ enemyList = false, locked = true, otherMobs = true })
             WowMock.inCombat = true
             WowMock.AddUnit("party3", SECRET, SECRET, SECRET)
             otherMob("nameplate1", "Wolf", "G1", WowMock.units.party3)
@@ -328,7 +328,7 @@ describe("Meter", function()
         end)
 
         it("your target is not repeated in the section", function()
-            start({ locked = true, otherMobs = true })
+            start({ enemyList = false, locked = true, otherMobs = true })
             WowMock.inCombat = true
             target() -- WowMock.units.target, guid "target"
             WowMock.units.nameplate1 = WowMock.units.target -- the same mob, as a nameplate
@@ -338,7 +338,7 @@ describe("Meter", function()
         end)
 
         it("a mob attacking you is highlighted and its attacker is you", function()
-            start({ locked = true, otherMobs = true })
+            start({ enemyList = false, locked = true, otherMobs = true })
             WowMock.inCombat = true
             target()
             otherMob("nameplate1", "Wolf", "G1", WowMock.units.player)
@@ -354,7 +354,7 @@ describe("Meter", function()
         end)
 
         it("also shows with no target, and makes the window taller", function()
-            start({ locked = true, otherMobs = true })
+            start({ enemyList = false, locked = true, otherMobs = true })
             WowMock.inCombat = true
             ns.Meter_Update()
             local before = frame:GetHeight()
@@ -366,7 +366,7 @@ describe("Meter", function()
         end)
 
         it("out of combat the section is empty", function()
-            start({ locked = true, otherMobs = true })
+            start({ enemyList = false, locked = true, otherMobs = true })
             otherMob("nameplate1", "Wolf", "G1", WowMock.units.party1)
             ns.Meter_Update()
             assert.are.equal(0, #lines())
@@ -374,7 +374,7 @@ describe("Meter", function()
         end)
 
         it("when the mobs go away the lines and the label go away", function()
-            start({ locked = true, otherMobs = true })
+            start({ enemyList = false, locked = true, otherMobs = true })
             WowMock.inCombat = true
             otherMob("nameplate1", "Wolf", "G1", WowMock.units.party1)
             ns.Meter_Update()
@@ -386,7 +386,7 @@ describe("Meter", function()
         end)
 
         it("at most 4 lines", function()
-            start({ locked = true, otherMobs = true })
+            start({ enemyList = false, locked = true, otherMobs = true })
             WowMock.inCombat = true
             for i = 1, 7 do otherMob("nameplate" .. i, "M" .. i, "G" .. i, WowMock.units.party1) end
             ns.Meter_Update()

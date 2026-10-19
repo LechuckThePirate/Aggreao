@@ -25,6 +25,7 @@ read_globals = {
     "UnitAffectingCombat", "UnitDetailedThreatSituation", "UnitExists", "UnitGUID", "UnitGroupRolesAssigned", "UnitIsDead",
     "UnitIsPlayer", "UnitIsUnit", "UnitName", "UnitPlayerControlled",
     "hooksecurefunc", "issecretvalue", "strtrim", "tinsert", "wipe",
+    "CurveConstants", "RegisterStateDriver", "UnitHealth", "UnitHealthMax", "UnitHealthPercent",
 }
 
 -- tests (busted): they define and change the simulated game's globals on purpose

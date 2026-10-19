@@ -48,6 +48,7 @@ end
 local function colorCode(r, g, b)
     return ("|cff%02x%02x%02x"):format(math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
 end
+ns.ClassColor, ns.ColorCode = classColor, colorCode -- the enemy list uses them too
 
 -- A line of the "Other mobs" section: the mob's name, and on the right whom it is attacking (class color,
 -- a paw for a pet) with your own threat on it; red when it is attacking you.
@@ -140,6 +141,7 @@ end
 
 function ns.Meter_ResetPosition()
     ns.char.window = nil
+    ns.char.enemyWindow = nil
     ns.Meter_ApplySettings()
 end
 
@@ -352,7 +354,8 @@ function ns.Meter_Update()
         ns.Alert_Reset()
         alertShown = false
     end
-    if ns.char.otherMobs and inCombat then
+    -- (the enemy list shows them, and more, in a window of its own)
+    if ns.char.otherMobs and inCombat and not ns.char.enemyList then
         others = ns.Threat_Mobs(OTHER_MOBS_MAX, validMob)
     end
     if not ns.char.enabled then
@@ -368,6 +371,7 @@ function ns.Meter_Update()
         ns.Meter_Render({}, nil, false, text, others)
         frame:Show()
     end
+    ns.Enemies_Update()
 end
 
 -- The alert can't wait for the next redraw: your own threat on the target, every ALERT_EVERY seconds. The

@@ -28,10 +28,10 @@ describe("Preferences", function()
     end)
 
     it("the checkboxes reflect and change the settings", function()
-        -- order: per character, show window, lock, role icons, pets, hide out of combat, other mobs, sound,
-        -- red border, minimap, chat messages
+        -- order: per character, show window, lock, role icons, pets, hide out of combat, enemy list, other mobs,
+        -- sound, red border, minimap, chat messages
         local list = checks()
-        assert.are.equal(11, #list)
+        assert.are.equal(12, #list)
         assert.is_true(list[1]:GetChecked())  -- per character
         assert.is_true(list[2]:GetChecked())  -- window shown (default)
         assert.is_true(list[3]:GetChecked())  -- locked (the test login)
@@ -48,16 +48,19 @@ describe("Preferences", function()
         assert.is_true(_G.AggreaoMeterFrame:IsShown()) -- the preferences are open: it stays, to be placed
         prefs:Hide()
         assert.is_false(_G.AggreaoMeterFrame:IsShown()) -- closed, out of combat: hidden
-        assert.is_true(list[7]:GetChecked()) -- other mobs: on by default
+        assert.is_true(list[7]:GetChecked()) -- enemy list: on by default
         list[7]:SetChecked(false); list[7]:Click()
-        assert.is_false(ns.char.otherMobs)
+        assert.is_false(ns.char.enemyList)
+        assert.is_true(list[8]:GetChecked()) -- other mobs: on by default
         list[8]:SetChecked(false); list[8]:Click()
-        assert.is_false(ns.char.alertSound)
+        assert.is_false(ns.char.otherMobs)
         list[9]:SetChecked(false); list[9]:Click()
-        assert.is_false(ns.char.alertFlash)
-        list[11]:SetChecked(false); list[11]:Click()
-        assert.is_true(ns.char.quiet)
+        assert.is_false(ns.char.alertSound)
         list[10]:SetChecked(false); list[10]:Click()
+        assert.is_false(ns.char.alertFlash)
+        list[12]:SetChecked(false); list[12]:Click()
+        assert.is_true(ns.char.quiet)
+        list[11]:SetChecked(false); list[11]:Click()
         assert.is_true(ns.char.minimap.hide)
     end)
 
@@ -77,17 +80,20 @@ describe("Preferences", function()
         assert.is_nil(note()._text:find("off now", 1, true))
     end)
 
-    it("the sliders show and change rows, scale, opacity and the alert threshold", function()
+    it("the sliders show and change rows, enemy rows, scale, opacity and the alert threshold", function()
         local list = sliders()
-        assert.are.equal(4, #list)
+        assert.are.equal(5, #list)
         changeSlider(list[1], 7)
         assert.are.equal(7, ns.char.rows)
-        changeSlider(list[2], 1.2)
+        changeSlider(list[2], 8)
+        assert.are.equal(8, ns.char.enemyRows)
+        changeSlider(list[3], 1.2)
         assert.are.equal(1.2, ns.char.scale)
         assert.are.equal(1.2, _G.AggreaoMeterFrame:GetScale())
-        changeSlider(list[3], 0.35)
+        assert.are.equal(1.2, _G.AggreaoEnemiesFrame:GetScale())
+        changeSlider(list[4], 0.35)
         assert.are.equal(0.35, ns.char.opacity)
-        changeSlider(list[4], 90)
+        changeSlider(list[5], 90)
         assert.are.equal(90, ns.char.alertThreshold)
     end)
 
@@ -119,8 +125,10 @@ describe("Preferences", function()
 
     it("Reset window position forgets the saved position", function()
         ns.char.window = { point = "TOP", relPoint = "TOP", x = 1, y = 1 }
+        ns.char.enemyWindow = { x = 1, y = 1 }
         WowMock.FindButton("Reset window position"):Click()
         assert.is_nil(ns.char.window)
+        assert.is_nil(ns.char.enemyWindow)
     end)
 
     it("What's new opens the welcome window", function()
