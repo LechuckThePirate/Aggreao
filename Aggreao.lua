@@ -67,6 +67,8 @@ SlashCmdList.AGGREAO = function(msg)
         ns.Print(ns.L["Window position reset."])
     elseif msg == "enemies" then
         ns.Enemies_Debug()
+    elseif msg == "test" then
+        ns.Enemies_Test()
     elseif msg == "where" then
         ns.Enemies_Where()
     elseif msg == "debug" then

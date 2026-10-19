@@ -41,6 +41,7 @@ local active = false     -- whether the list is on (changed only outside combat,
 local activeRows = 0     -- how many rows are on (idem)
 local layoutKey          -- where and how big the window and the buttons were last put
 local petMode            -- whether the buttons were last set for a player with a pet
+local testToken          -- while /aggreao test is on: the unit the first button is bound to
 
 local function rowTop(i) return TOP + (i - 1) * ROW_H end
 
@@ -166,6 +167,10 @@ local function createButton(i)
         GameTooltip:Show()
     end)
     button:SetScript("OnLeave", GameTooltip_Hide)
+    button.test = button:CreateTexture(nil, "OVERLAY") -- /aggreao test: shows where the test button is
+    button.test:SetAllPoints()
+    button.test:SetColorTexture(0, 1, 0, 0.35)
+    button.test:Hide()
     button:HookScript("PreClick", function(self, mouseButton)
         if ns.debugClicks then
             ns.Print(("click %s on %s: type1=%s unit=%s"):format(tostring(mouseButton), self:GetName() or "?",
@@ -237,22 +242,62 @@ local function settle()
     local pet = yes(UnitExists("pet"))
     for i = 1, MAX_ROWS do
         local token = tokens[i]
-        if token ~= bound[i] or pet ~= petMode then
-            bound[i] = token
-            local button = buttons[i]
-            if token then button:SetAttribute("unit", token) end
-            if pet and token then
-                button:SetAttribute("type1", "macro")
-                -- (plain /target <unit>, then the pet attacks what is targeted: the forms every client understands)
-                button:SetAttribute("macrotext1", ("/target %s\n/petattack"):format(token))
-            else
-                button:SetAttribute("type1", "target")
-                button:SetAttribute("macrotext1", nil)
+        if not (i == 1 and testToken) then -- (/aggreao test has the first button while it is on)
+            if token ~= bound[i] or pet ~= petMode then
+                bound[i] = token
+                local button = buttons[i]
+                if token then button:SetAttribute("unit", token) end
+                if pet and token then
+                    button:SetAttribute("type1", "macro")
+                    -- (plain /target <unit>, then the pet attacks what is targeted: the forms every client understands)
+                    button:SetAttribute("macrotext1", ("/target %s\n/petattack"):format(token))
+                else
+                    button:SetAttribute("type1", "target")
+                    button:SetAttribute("macrotext1", nil)
+                end
             end
+            setDriver(i, token and ("[@%s,harm,nodead,combat] show; hide"):format(token) or "hide")
         end
-        setDriver(i, token and ("[@%s,harm,nodead,combat] show; hide"):format(token) or "hide")
     end
     petMode = pet
+end
+
+-- /aggreao test: an experiment, outside combat. The first button is bound to a hostile mob that is around, with the plain
+-- "target" action on its unit, and is always shown (a green square over the first row): click it and see if the game
+-- targets a nameplate unit from a secure button. Again to turn it off.
+function ns.Enemies_Test()
+    if not frame then return end
+    if InCombatLockdown() then
+        ns.Print("not in combat, please")
+        return
+    end
+    local b = buttons[1]
+    if testToken then
+        testToken = nil
+        b.test:Hide()
+        bound[1], driven[1], petMode = nil, nil, nil -- settle() sets it again
+        ns.Print("test off")
+        ns.Enemies_Update()
+        return
+    end
+    for _, unit in ipairs(ns.Threat_MobTokens()) do
+        if yes(UnitExists(unit)) and yes(UnitCanAttack("player", unit)) and not yes(UnitIsDead(unit)) then
+            testToken = unit
+            break
+        end
+    end
+    if not testToken then
+        ns.Print("no hostile mob with a nameplate around: point the camera at one")
+        return
+    end
+    b:SetAttribute("type1", "target")
+    b:SetAttribute("macrotext1", nil)
+    b:SetAttribute("unit", testToken)
+    setDriver(1, "show")
+    b.test:Show()
+    ns.debugClicks = true
+    ns.Print(("test on: button 1 is bound to %s (%s). Open the preferences (so the window shows) and click the green square."):format(
+        testToken, tostring(ns.Plain(UnitName(testToken)))))
 end
 
 -- For when a click does nothing (/aggreao enemies): what each button is bound to and whether it is there.
