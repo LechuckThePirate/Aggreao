@@ -24,8 +24,21 @@ shown, your own row replaces the last one, so you always see where you stand.
 Under the title bar, the mob's name; out of combat, the window says so instead
 of showing made-up numbers.
 
+### The enemy list
+A second window lists **every mob that is fighting you**, like the enmity list of
+other games: its name, its **health**, whom it is attacking (in their class color)
+with your own threat on it, and a colored strip on the left that says at a glance
+what you hold. As a tank, green means you have the mob and red means it is loose
+or on a healer or a dps, and those come first -- so you see which one you are
+losing. A red **!** also appears on the nameplate of each loose mob, so you know
+which one to click to take it back (the game does not let an addon target a mob
+from a list). The row of your current target is highlighted. Drag the window by
+its title bar; it appears in combat (and while the preferences are open, to place
+it). By default only tanks get it; choose **Always** or **Never** in the
+preferences. It needs the enemy nameplates on (the `V` key).
+
 ### The other mobs you are fighting
-Turn on **Show other mobs in combat** and, under your target's list, you get one
+With the enemy list off, turn on **Show other mobs in combat** and, under your target's list, you get one
 line for each other mob in the fight: its name and **whom it is attacking** (in
 their class color, with a shield next to the tank and a paw next to pets), plus your own threat on it where the game
 provides it. The mobs that are attacking *you* are marked in red, first in the

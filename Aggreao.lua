@@ -35,6 +35,7 @@ events:SetScript("OnEvent", function(_, event, arg1)
         announce(ns.L["initializing..."])
         ns.Minimap_Init()
         ns.Meter_Init()
+        ns.Enemies_Init()
     elseif event == "PLAYER_ENTERING_WORLD" then
         -- also fires after /reload; announced (and the welcome window shown, if new) once per UI load
         C_Timer.After(1, announceReady)

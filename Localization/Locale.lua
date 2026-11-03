@@ -43,8 +43,20 @@ local es = {
     ["Lock the window position"] = "Bloquear la posición de la ventana",
     ["Show role icons (tank, healer, dps)"] = "Mostrar iconos de rol (tanque, sanador, dps)",
     ["Include pets"] = "Incluir mascotas",
-    ["Show other mobs in combat"] = "Mostrar otros mobs en combate",
+    ["Show other mobs in combat (if the enemy list is off)"] = "Mostrar otros mobs en combate (si la lista de enemigos está apagada)",
+    ["Enemy list: %s"] = "Lista de enemigos: %s",
+    ["Tank: mark the loose enemies on their nameplate"] = "Tanque: marcar en su placa a los enemigos sueltos",
+    ["Only as tank"] = "Solo como tanque",
+    ["Always"] = "Siempre",
+    ["Never"] = "Nunca",
+    ["Enemies listed: %d"] = "Enemigos en la lista: %d",
     ["Other mobs"] = "Otros mobs",
+
+    -- enemy list
+    ["Enemies"] = "Enemigos",
+    ["No enemies"] = "Sin enemigos",
+    ["Enemy list closed. Show it again in the preferences."] =
+        "Lista de enemigos cerrada. Vuelve a mostrarla en las preferencias.",
     ["YOU"] = "TÚ",
     ["Needs the enemy nameplates on (V key)."] = "Necesita las placas de enemigos activadas (tecla V).",
     ["Needs the enemy nameplates on (V key). They are off now."] =

@@ -23,6 +23,7 @@ Modules\Alert\Alert.lua
 Modules\UI\Layout.lua
 Modules\UI\Menu.lua
 Modules\UI\Meter.lua
+Modules\UI\Enemies.lua
 Modules\UI\MinimapButton.lua
 Modules\UI\Preferences.lua
 Modules\UI\Welcome.lua

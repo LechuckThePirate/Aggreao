@@ -23,6 +23,7 @@ local function resetState()
     -- their threat on the mob: WowMock.threat[token] = { isTanking, status, scaledPct, rawPct, threatValue }
     WowMock.units = {}
     WowMock.threat = {}
+    WowMock.plates = {}
     WowMock.group = nil -- nil = solo, { size = n, raid = bool }
     WowMock.sounds = {}
     WowMock.time = 0
@@ -148,6 +149,7 @@ function frameMethods:GetHighlightTexture() self._highlight = self._highlight or
 function frameMethods:GetThumbTexture() self._thumb = self._thumb or WowMock.NewFrame("Texture", nil, self); return self._thumb end
 function frameMethods:Click(...) fire(self, "OnClick", ...) end
 function frameMethods:GetObjectType() return self._kind end
+function frameMethods:GetName() return self._name end
 
 local function methodFor(self, k)
     if frameMethods[k] then return frameMethods[k] end
@@ -304,7 +306,11 @@ end
 UnitGUID = function(token) local u = unitOf(token); return u and (u.guid or token) end
 UnitIsPlayer = function(token) local u = unitOf(token); return u ~= nil and u.npc ~= true and u.pet ~= true end
 UnitPlayerControlled = function(token) local u = unitOf(token); return u ~= nil and u.npc ~= true end
+UnitHealth = function(token) local u = unitOf(token); return u and u.health or 0 end
+UnitHealthMax = function(token) local u = unitOf(token); return u and u.healthMax or 0 end
 InCombatLockdown = function() return WowMock.inCombat or false end
+-- WowMock.plates[token] = the nameplate frame of that unit
+C_NamePlate = { GetNamePlateForUnit = function(token) return WowMock.plates and WowMock.plates[token] end }
 GetCursorPosition = function() return WowMock.cursor[1], WowMock.cursor[2] end
 IsShiftKeyDown = function() return WowMock.shift or false end
 IsControlKeyDown = function() return WowMock.ctrl or false end

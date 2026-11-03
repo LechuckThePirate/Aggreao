@@ -269,6 +269,43 @@ describe("Threat", function()
             assert.are.equal("Other", list[1].mob)
         end)
 
+        it("gives each mob's health: as the game says it and as a percentage", function()
+            mob("nameplate1", "Wolf", "G1", { health = 30, healthMax = 120 })
+            local e = ns.Threat_Mobs(10)[1]
+            assert.are.equal("nameplate1", e.unit)
+            assert.are.equal(30, e.health)
+            assert.are.equal(120, e.healthMax)
+            assert.are.equal(25, e.healthPct)
+        end)
+
+        it("health hidden from addons is handed over as it is, with no percentage worked out", function()
+            local SECRET = { "secret" }
+            _G.issecretvalue = function(v) return v == SECRET end
+            mob("nameplate1", "Wolf", "G1", { health = SECRET, healthMax = SECRET })
+            local e = ns.Threat_Mob("nameplate1")
+            assert.are.equal(SECRET, e.health)
+            assert.is_nil(e.healthPct)
+            _G.issecretvalue = nil
+        end)
+
+        it("... unless the game gives the percentage on its own (UnitHealthPercent)", function()
+            local SECRET = { "secret" }
+            _G.issecretvalue = function(v) return v == SECRET end
+            _G.CurveConstants = { ScaleTo100 = {} }
+            _G.UnitHealthPercent = function() return 42 end
+            mob("nameplate1", "Wolf", "G1", { health = SECRET, healthMax = SECRET })
+            assert.are.equal(42, ns.Threat_Mob("nameplate1").healthPct)
+            _G.issecretvalue, _G.CurveConstants, _G.UnitHealthPercent = nil, nil, nil
+        end)
+
+        it("without the health API a mob is still listed", function()
+            _G.UnitHealth, _G.UnitHealthMax = nil, nil
+            mob("nameplate1", "Wolf", "G1")
+            local e = ns.Threat_Mobs(10)[1]
+            assert.is_nil(e.health)
+            assert.is_nil(e.healthPct)
+        end)
+
         it("counts a mob once even if it is a nameplate and also your focus", function()
             WowMock.units.focus = mob("nameplate1", "Wolf", "G1") -- the same unit under two tokens
             assert.are.equal(1, #ns.Threat_Mobs(10))
