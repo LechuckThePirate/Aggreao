@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.3.0
 
 - New: the enemy list, a window with every mob that is fighting you: its name, its health, whom it is attacking and
   your own threat on it, and a strip that shows at a glance whether you hold it (as a tank: green = yours, red = loose

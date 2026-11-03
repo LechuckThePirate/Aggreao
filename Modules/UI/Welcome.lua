@@ -12,7 +12,9 @@ local ISSUES_URL = "https://github.com/LechuckThePirate/Aggreao/issues"
 -- Mirrors the latest entry in CHANGELOG.md -- update this alongside it (and the version bump) on every
 -- release; shown as-is, scrollable, in the window below.
 local LATEST_CHANGELOG_TEXT = table.concat({
-    "- Fix: the welcome windows of several addons no longer show through each other: each one opens in front, with all its content.",
+    "- New: the enemy list, a window with every mob fighting you: its health, whom it attacks and your threat on it, " ..
+        "the ones that need you first (shown in combat, by default only for tanks).",
+    "- New: as a tank, a red \"!\" on the nameplate of each mob that is not on you, so you know which one to take back.",
 }, "\n")
 
 -- The other addons of the same author, shown with their links.
